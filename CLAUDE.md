@@ -41,17 +41,19 @@ refers to another issue in *this* repo — there is no cross-repo dependency syn
 
 ## Repo layout
 
-TBD — to be filled in during the Foundations milestone (Spec §14, phase 1). Suggested starting
-point, matching the component names in Spec §2:
+Monorepo, matching the component names in Spec §2. So `<BACKEND_PATH>` = `orchestrator-api`
+and `<FRONTEND_PATH>` = `orchestrator-ui` everywhere the skills reference them.
 
 - `orchestrator-api/` — FastAPI backend + deterministic engine
 - `orchestrator-ui/` — React/Vite frontend
+- `docs/` — `specification.md` (Notion mirror) + `BUILD_PLAN.md`
+- `docker-compose.yml` — the local stack (Spec §2)
+
+The directories are created by the Foundations milestone scaffold; the paths above are settled
+and skills should use them now.
 
 Build progress (phase status and per-milestone issue checklists) lives in
 `docs/BUILD_PLAN.md` — see "GitHub conventions" below.
-
-Update this section as soon as the layout is decided — several skills reference
-`<BACKEND_PATH>` / `<FRONTEND_PATH>` and should be updated to point at the real directories.
 
 ## GitHub conventions
 
@@ -102,13 +104,14 @@ apply to every skill and every agent persona.
 
 | Area | Stack | Test | Lint | Typecheck |
 |---|---|---|---|---|
-| Backend (`<BACKEND_PATH>`) | Python 3.13, FastAPI, Pydantic, asyncio, SQLite | `<BACKEND_TEST_CMD>` | `<BACKEND_LINT_CMD>` | `<BACKEND_TYPECHECK_CMD>` |
-| Frontend (`<FRONTEND_PATH>`) | React + Vite | `<FRONTEND_TEST_CMD>` | `<FRONTEND_LINT_CMD>` | `<FRONTEND_TYPECHECK_CMD>` |
+| Backend (`orchestrator-api`) | Python 3.13, FastAPI, Pydantic, asyncio, SQLite; `uv` for env/deps | `uv run pytest` | `uv run ruff check .` | `uv run pyright` |
+| Frontend (`orchestrator-ui`) | React + Vite | `<FRONTEND_TEST_CMD>` | `<FRONTEND_LINT_CMD>` | `<FRONTEND_TYPECHECK_CMD>` |
 
-These placeholders get filled in as part of the Foundations milestone, when the package manager
-and tooling are chosen and the scaffold lands. Until a command is filled in, `workflow-testing`
-and `process-review-pr` treat that gate as "not yet established — note it, don't fail on it",
-not as a silent skip forever. Once filled in, the gate is mandatory like any other repo.
+Backend toolchain is settled: `uv` (deps + lockfile), `pytest`, `ruff` (lint **and** format —
+`uv run ruff format`), `pyright`. The frontend command placeholders get filled in when the UI
+scaffold lands (Phase 6). Until a command is filled in, `workflow-testing` and
+`process-review-pr` treat that gate as "not yet established — note it, don't fail on it", not as
+a silent skip forever. Once filled in, the gate is mandatory like any other repo.
 
 Local environment: Docker Compose stack (Traefik ingress, `orchestrator-api`, `orchestrator-ui`,
 `langfuse` + `langfuse-db`, `agent-runner`, `egress-proxy`) per Spec §2. There is no separate
@@ -132,7 +135,10 @@ These come from the Specification's core principles and security model, and are 
   `ProviderAdapter`, never to the Claude SDK directly.
 - **Secrets by reference, never by value (Spec §10, §16.3).** Config files (`project.yaml`,
   `execution-profile.yaml`) hold env-var *names* only and must be safe to commit. Actual secrets
-  come from the container secret store / environment at runtime.
+  come from the container secret store / environment at runtime. **Mechanism (settled):** Docker
+  Compose injects vars via `env_file: .env` (gitignored); a committed `.env.example` lists the
+  names only; the engine resolves them with `os.environ` at runtime. Auth uses an
+  `AUTH_PASSWORD_HASH` secret (argon2). Any new env var must be added to `.env.example`.
 - **Engine vs AI separation in rendered instructions (Spec §17.3, §17.7).** `executor: engine`
   skills are not rendered into an AI session's instructions — they're the engine's own spec,
   surfaced to an AI only at defined hand-back points (e.g. a failing test fed back to

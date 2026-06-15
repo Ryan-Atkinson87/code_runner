@@ -406,7 +406,7 @@ Langfuse is the standard open-source LLM-observability tool. Powers these report
 
 ## 12. UI scope (React)
 
-Authenticated (login required even on LAN). Minimum capability set:
+Authenticated (login required even on LAN). **Auth mechanism:** single-user login — a password verified against an argon2 hash (held as the `AUTH_PASSWORD_HASH` secret), establishing an HTTP-only server-side session cookie; one FastAPI dependency guards all routes and the SSE stream. No user table or registration (single human, single local server). Minimum capability set:
 
 - **Run control:** select project, select wave(s), select provider/plan, start/stop, pause/resume.
 - **Live progress:** current wave, current issue, current role/session, normalised event stream (SSE).
@@ -458,6 +458,7 @@ Resolved (kept here for traceability; detail is in the referenced sections):
 - **Model mapping** — Opus for planning and review, Sonnet for implementation (Opus escalation on complex issues) and QA semantic judgement. See 16.3 `provider.models`.
 - **Plan file ownership** — hybrid: human (or planner persona at setup) owns the forward-looking wave structure/intent; the engine owns the status markers, updated as work completes. Mirrors Trive `process-close-milestone` Step 4.
 - **Postgres switch trigger** — switch when more than one process needs to write the state store concurrently (e.g. UI/API split from the engine, multiple project engines, or moving off the single local server). Until then SQLite in WAL mode. A single async process with parallel sessions stays on SQLite.
+- **Auth mechanism** — single-user password (argon2 hash via `AUTH_PASSWORD_HASH`) establishing an HTTP-only server-side session cookie; one FastAPI dependency guards all routes + SSE. No user table or registration. See 12.
 
 Still open:
 
