@@ -55,7 +55,7 @@ schema + `project.yaml` loader.
 - [x] #5 — Secrets-by-reference resolution and .env.example _(deps: #1)_
 - [x] #6 — Single-user auth: argon2 password, session cookie, route/SSE guard _(deps: #2, #5)_
 - [x] #7 — Docker Compose stack skeleton (Traefik + 7 services + Dockerfiles) _(deps: #2)_
-- [ ] #8 — agent-runner network lockdown: Squid egress allowlist + iptables DROP + mount boundary _(deps: #7)_
+- [x] #8 — agent-runner network lockdown: Squid egress allowlist + iptables DROP + mount boundary _(deps: #7)_
 
 **Workable now (no unmet deps):** #1. After #1 merges: #2, #3, #4, #5 (parallel). Then #6 (needs #2, #5), #7 (needs #2), and #8 (needs #7).
 
