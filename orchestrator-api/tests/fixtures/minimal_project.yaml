@@ -1,0 +1,27 @@
+project:
+  name: My Tool
+  root: /projects/my-tool
+
+integrations:
+  github:
+    owner: my-user
+    project_board: 1
+  notion:
+    dashboard_page: abc123
+    social_context_page: def456
+
+repos:
+  - name: my-tool
+    path: .
+    package_manager: pnpm
+    commands:
+      test: pnpm test
+      lint: pnpm lint
+      typecheck: pnpm typecheck
+
+secrets:
+  github_pat: GITHUB_PAT
+  anthropic_api_key: ANTHROPIC_API_KEY
+  notion_token: NOTION_TOKEN
+  telegram_bot_token: TELEGRAM_BOT_TOKEN
+  telegram_chat_id: TELEGRAM_CHAT_ID

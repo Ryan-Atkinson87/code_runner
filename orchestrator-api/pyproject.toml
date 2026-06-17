@@ -5,8 +5,10 @@ description = "Code Runner orchestration engine — FastAPI backend"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.115",
-    "uvicorn[standard]>=0.34",
+    "pydantic>=2.11",
     "pydantic-settings>=2.7",
+    "pyyaml>=6.0",
+    "uvicorn[standard]>=0.34",
 ]
 
 [dependency-groups]
