@@ -51,7 +51,7 @@ schema + `project.yaml` loader.
 - [x] #1 — Scaffold orchestrator-api Python project (uv, ruff, pyright, pytest)
 - [x] #2 — FastAPI application skeleton with health endpoint and settings loading _(deps: #1)_
 - [x] #3 — SQLite state store: schema baseline, WAL mode, connection management _(deps: #1)_
-- [ ] #4 — project.yaml Pydantic schema and fail-fast loader _(deps: #1)_
+- [x] #4 — project.yaml Pydantic schema and fail-fast loader _(deps: #1)_
 - [ ] #5 — Secrets-by-reference resolution and .env.example _(deps: #1)_
 - [ ] #6 — Single-user auth: argon2 password, session cookie, route/SSE guard _(deps: #2, #5)_
 - [ ] #7 — Docker Compose stack skeleton (Traefik + 7 services + Dockerfiles) _(deps: #2)_
