@@ -1,0 +1,9 @@
+# Built-in egress allowlist for agent-runner (Spec §7.2).
+# Per-project additions are appended at runtime from project.yaml egress.allow.
+.github.com
+.api.github.com
+.codeload.github.com
+.registry.npmjs.org
+.pypi.org
+.files.pythonhosted.org
+.api.anthropic.com
