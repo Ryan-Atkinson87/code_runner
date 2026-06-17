@@ -48,7 +48,7 @@ schema + `project.yaml` loader.
 
 ### Issues
 
-- [ ] #1 — Scaffold orchestrator-api Python project (uv, ruff, pyright, pytest)
+- [x] #1 — Scaffold orchestrator-api Python project (uv, ruff, pyright, pytest)
 - [ ] #2 — FastAPI application skeleton with health endpoint and settings loading _(deps: #1)_
 - [ ] #3 — SQLite state store: schema baseline, WAL mode, connection management _(deps: #1)_
 - [ ] #4 — project.yaml Pydantic schema and fail-fast loader _(deps: #1)_
