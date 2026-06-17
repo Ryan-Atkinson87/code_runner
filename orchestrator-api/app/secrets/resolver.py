@@ -29,7 +29,4 @@ def resolve_secrets(secrets_map: dict[str, str]) -> dict[str, str]:
             "Set them in .env or export them before starting the engine."
         )
 
-    return {
-        logical_name: os.environ[env_var]
-        for logical_name, env_var in secrets_map.items()
-    }
+    return {logical_name: os.environ[env_var] for logical_name, env_var in secrets_map.items()}
