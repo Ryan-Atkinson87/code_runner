@@ -1,0 +1,106 @@
+services:
+  traefik:
+    image: traefik:v3.4
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+    networks:
+      - code_runner
+
+  orchestrator-api:
+    build:
+      context: ./orchestrator-api
+    env_file: .env
+    environment:
+      - CODE_RUNNER_ROOT_PATH=/api
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls=true"
+      - "traefik.http.middlewares.api-strip.stripprefix.prefixes=/api"
+      - "traefik.http.routers.api.middlewares=api-strip"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.api-http.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.api-http.entrypoints=web"
+      - "traefik.http.middlewares.api-http-strip.stripprefix.prefixes=/api"
+      - "traefik.http.routers.api-http.middlewares=api-http-strip"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - code_runner
+
+  orchestrator-ui:
+    build:
+      context: ./orchestrator-ui
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ui.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.ui.entrypoints=websecure"
+      - "traefik.http.routers.ui.tls=true"
+      - "traefik.http.routers.ui.priority=1"
+      - "traefik.http.services.ui.loadbalancer.server.port=80"
+      - "traefik.http.routers.ui-http.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.ui-http.entrypoints=web"
+      - "traefik.http.routers.ui-http.priority=1"
+    networks:
+      - code_runner
+
+  langfuse:
+    image: langfuse/langfuse:2
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://langfuse:langfuse@langfuse-db:5432/langfuse
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET:-changeme}
+      - SALT=${LANGFUSE_SALT:-changeme}
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - code_runner
+
+  langfuse-db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=langfuse
+      - POSTGRES_PASSWORD=langfuse
+      - POSTGRES_DB=langfuse
+    volumes:
+      - langfuse-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - code_runner
+
+  agent-runner:
+    image: python:3.13-slim
+    command: ["sleep", "infinity"]
+    env_file: .env
+    networks:
+      - code_runner
+
+  egress-proxy:
+    image: ubuntu/squid:latest
+    networks:
+      - code_runner
+
+networks:
+  code_runner:
+    driver: bridge
+
+volumes:
+  langfuse-data:
