@@ -21,14 +21,14 @@ check() {
 
     if [ "$expect_success" = "true" ] && [ "$exit_code" -eq 0 ]; then
         echo -e "  ${GREEN}PASS${NC}: $description"
-        ((pass++))
+        pass=$((pass + 1))
     elif [ "$expect_success" = "false" ] && [ "$exit_code" -ne 0 ]; then
         echo -e "  ${GREEN}PASS${NC}: $description (blocked as expected)"
-        ((pass++))
+        pass=$((pass + 1))
     else
         echo -e "  ${RED}FAIL${NC}: $description"
         echo "       Output: $output"
-        ((fail++))
+        fail=$((fail + 1))
     fi
 }
 
@@ -75,11 +75,11 @@ api_check=$(docker compose exec -T orchestrator-api \
     python3 -c "import urllib.request; urllib.request.urlopen('https://example.com', timeout=10); print('OK')" 2>&1) && api_exit=0 || api_exit=$?
 if [ "$api_exit" -eq 0 ]; then
     echo -e "  ${GREEN}PASS${NC}: orchestrator-api has normal internet access"
-    ((pass++))
+    pass=$((pass + 1))
 else
     echo -e "  ${RED}FAIL${NC}: orchestrator-api should have normal internet access"
     echo "       Output: $api_check"
-    ((fail++))
+    fail=$((fail + 1))
 fi
 
 echo ""
