@@ -46,6 +46,33 @@ gh api repos/Ryan-Atkinson87/code_runner/milestones/<number> | jq '{title: .titl
 
 Confirm `workflow-milestone-completion` Step 6 ran — any issue that declared `Depends on: #N` against an issue in this milestone should have its `blocked` label removed. Notify the backend and/or frontend implementor agents that they can start `process-implement-milestone` for the next milestone.
 
-## Step 6: Plan the next milestone (if not already planned)
+## Step 6: Write the dev diary entry
+
+Append an entry to `docs/CLAUDE_DEV_DIARY.md` for the milestone that just closed. This is a human-readable narrative — not a changelog or bullet dump. Structure it as:
+
+```markdown
+## Milestone N: <milestone name> — <date completed (YYYY-MM-DD)>
+
+### What was done
+
+Plain-language summary of the work completed in this milestone. Describe the features, infrastructure, or capabilities that were built — not individual commits or PRs. A reader who has never seen the codebase should understand what exists now that didn't before.
+
+### Why it was done
+
+The motivation behind this milestone: what problem it solves, what it unblocks, or what spec requirement it satisfies. Reference the relevant Spec sections where useful (e.g. "per Spec §3").
+
+### Effect on the project
+
+How the project is different after this milestone. What can the system do now? What is unblocked for future milestones? Any notable architectural decisions or trade-offs that were made.
+```
+
+Guidelines:
+- Write in past tense, third person ("The engine gained…", "This milestone introduced…").
+- Keep each section to 1–3 short paragraphs. Aim for ~200–400 words total per entry.
+- Do not list every issue or PR — summarise the work thematically.
+- If this is the first entry, add a top-level heading `# Code Runner — Dev Diary` before the milestone entry.
+- If entries already exist, append the new entry at the end of the file.
+
+## Step 7: Plan the next milestone (if not already planned)
 
 If the next milestone has not been planned yet, run `process-plan-milestone` now.

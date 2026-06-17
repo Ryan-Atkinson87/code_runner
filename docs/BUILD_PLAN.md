@@ -29,8 +29,8 @@ progress and has two parts:
 
 | # | Phase | Status | Depends on |
 |---|---|---|---|
-| 1 | Foundations | 🔄 | — |
-| 2 | Git/PR engine | ⬜ | 1 |
+| 1 | Foundations | ✅ | — |
+| 2 | Git/PR engine | 🔄 | 1 |
 | 3 | Claude adapter + wave loop | ⬜ | 1, 2 |
 | 4 | Usage monitor | ⬜ | 3 |
 | 5 | Trackers + notifications | ⬜ | 3 |
@@ -44,7 +44,7 @@ progress and has two parts:
 Container + egress proxy + filesystem binding; FastAPI skeleton + auth; SQLite state; config
 schema + `project.yaml` loader.
 
-**Status:** 🔄 (planned — issues created)
+**Status:** ✅ (complete — milestone closed 2026-06-17)
 
 ### Issues
 
@@ -56,8 +56,6 @@ schema + `project.yaml` loader.
 - [x] #6 — Single-user auth: argon2 password, session cookie, route/SSE guard _(deps: #2, #5)_
 - [x] #7 — Docker Compose stack skeleton (Traefik + 7 services + Dockerfiles) _(deps: #2)_
 - [x] #8 — agent-runner network lockdown: Squid egress allowlist + iptables DROP + mount boundary _(deps: #7)_
-
-**Workable now (no unmet deps):** #1. After #1 merges: #2, #3, #4, #5 (parallel). Then #6 (needs #2, #5), #7 (needs #2), and #8 (needs #7).
 
 ---
 
