@@ -53,8 +53,9 @@ def test_error_message_includes_all_missing(monkeypatch: pytest.MonkeyPatch) -> 
     assert "B_VAR" in msg
 
 
-def test_values_never_logged(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("SECRET_VAR", "super-secret-value")
-    result = resolve_secrets({"key": "SECRET_VAR"})
-    assert result["key"] == "super-secret-value"
-    assert "super-secret-value" not in repr(SecretResolutionError)
+def test_error_does_not_leak_resolved_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PRESENT_VAR", "super-secret-value")
+    monkeypatch.delenv("MISSING_VAR", raising=False)
+    with pytest.raises(SecretResolutionError) as exc_info:
+        resolve_secrets({"present": "PRESENT_VAR", "missing": "MISSING_VAR"})
+    assert "super-secret-value" not in str(exc_info.value)
