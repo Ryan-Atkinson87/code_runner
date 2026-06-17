@@ -14,7 +14,7 @@ progress and has two parts:
 |---|---|---|
 | A phase is about to be planned | Orchestrator (`process-plan-milestone` Step 1) | Confirm the phase's dependencies are `✅` and the phase table still matches reality |
 | A new issue is created for a milestone | Orchestrator (`workflow-project-planning` Steps 4-6) | Add `- [ ] #N — Title` under that phase's "Issues" heading, in dependency order |
-| A PR merges and closes an issue | Orchestrator (`workflow-code-review` Step 9) | Check off the corresponding row |
+| A PR merges and closes an issue | Human merges; Orchestrator checks off the row (`workflow-code-review` Step 9) when confirmed | Check off the corresponding row |
 | A milestone closes | Orchestrator (`process-close-milestone` Step 3) | Set the phase's status to `✅`; if the next phase's dependencies are now all `✅`, set its status to `🔄` |
 
 ## Status legend

@@ -94,16 +94,19 @@ For each finding:
 
 ## Step 8: Sign off or request changes
 
-- **Request changes** if any blocking finding exists: post a comment (`gh pr comment <PR> --body "..."`) titled "Requesting changes" listing each blocking finding with its file/line and the fix required. Stop here — wait for `process-handle-feedback`.
-- **Sign off** if all acceptance criteria are met, no blocking findings remain, and architecture/boundary rules are observed: post a summary comment (`gh pr comment <PR> --body "..."`) confirming the PR is ready to merge.
+- **Request changes** if any blocking finding exists: post a comment (`gh pr comment <PR> --body "..."`) with the heading **"Requesting changes — implementor action needed"**, listing each blocking finding with its file/line and the exact fix required. Stop here — wait for `process-handle-feedback`.
+- **Sign off** if all acceptance criteria are met, no blocking findings remain, and architecture/boundary rules are observed: post a comment (`gh pr comment <PR> --body "..."`) with the heading **"Ready to merge"**, summarising what was checked and confirming the PR passes review.
 - Never sign off a PR with an open blocking comment.
+- **Do not merge PRs.** Merging is the human's responsibility.
 
 GitHub rejects a formal `gh pr review` from the PR author (see "Tooling conventions" in `CLAUDE.md`) — a comment is the sign-off, there is no separate approval action.
 
-## Step 9: Merge and sync
+## Step 9: Notify the human
 
-After signing off:
-1. Merge the PR into `main`: `gh pr merge <PR> --squash --delete-branch`. With `Closes #N` in the PR body, this closes the linked issue automatically — confirm the issue shows as `Closed`.
-2. In `docs/BUILD_PLAN.md`, check off this issue's row under its phase (`- [ ] #N — ...` →
-   `- [x] #N — ...`) and commit the change to `main`.
-3. Apply `workflow-notion-sync` (a no-op at this level — see that skill).
+After posting the review comment, print a terminal message:
+- If ready to merge: `PR #N ("<title>") is ready to merge. Sign-off comment posted.`
+- If changes needed: `PR #N ("<title>") needs changes before it can merge. Comment posted for the implementor.`
+
+After the human confirms the PR has merged, the orchestrator must:
+1. Check off the issue's row in `docs/BUILD_PLAN.MD` (`- [ ] #N — ...` → `- [x] #N — ...`) and commit the change to `main`.
+2. Apply `workflow-notion-sync`.

@@ -48,8 +48,12 @@ If the PR touches `orchestrator-ui`, apply `workflow-responsiveness-testing`. Th
 
 Skip this step for backend-only PRs.
 
-## Step 4: Sign off, merge, and sync
+## Step 4: Sign off and notify
 
-`workflow-code-review` Step 8 (sign off / request changes) and Step 9 (merge + sync) complete the process — once Steps 1–3 above are clean, follow those steps to merge the PR into `main`. Merging closes the linked issue automatically via `Closes #N`.
+`workflow-code-review` Steps 8 and 9 complete the process.
 
-If `workflow-accessibility-testing` or `workflow-responsiveness-testing` raised non-blocking findings, confirm those issues were created and assigned to the appropriate milestone before merging.
+**Do not merge PRs — merging is the human's responsibility.** Post the review comment (sign-off or request-changes) then notify the human in the terminal per `workflow-code-review` Step 9.
+
+If `workflow-accessibility-testing` or `workflow-responsiveness-testing` raised non-blocking findings, confirm those follow-up issues are created and assigned to the appropriate milestone before posting the sign-off.
+
+After the human confirms the PR has merged, complete `workflow-code-review` Step 9 (check off `docs/BUILD_PLAN.md` and apply `workflow-notion-sync`).
