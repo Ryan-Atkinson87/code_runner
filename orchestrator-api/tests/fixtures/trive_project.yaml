@@ -1,0 +1,78 @@
+project:
+  name: Trive Services
+  description: Multi-tenant local services booking platform.
+  root: /projects/trive-services
+
+integrations:
+  github:
+    owner: Ryan-Atkinson87
+    project_board: 3
+  notion:
+    workspace: trive-services
+    dashboard_page: trive-services-page-ref
+    social_context_page: trive-social-context-page-ref
+
+branches:
+  integration: dev
+  agent_pattern: code-runner/<wave-slug>
+  sync_strategy: merge
+
+waves:
+  source: milestone-name
+  plan_file: IMPLEMENTATION_PLAN.md
+
+repos:
+  - name: trive-backend
+    path: trive-backend
+    role: backend
+    backend: true
+    package_manager: pnpm
+    commands:
+      test: pnpm test
+      lint: pnpm lint
+      typecheck: pnpm typecheck
+
+  - name: trive-frontend
+    path: trive-frontend
+    role: frontend
+    package_manager: pnpm
+    commands:
+      test: pnpm test
+      lint: pnpm lint
+      typecheck: pnpm typecheck
+
+  - name: trive-admin
+    path: trive-admin
+    role: admin
+    package_manager: pnpm
+    commands:
+      test: pnpm test
+      lint: pnpm lint
+      typecheck: pnpm typecheck
+
+provider:
+  default: claude
+  plan: max
+  models:
+    planning: claude-opus-4-8
+    implementing: claude-sonnet-4-6
+    reviewing: claude-opus-4-8
+
+usage:
+  threshold_percent: 80
+  peak_hour_throttle: true
+
+notifications:
+  telegram: true
+  email: false
+
+limits:
+  test_fix_attempts: 3
+  review_cycles: 2
+
+secrets:
+  github_pat: GITHUB_PAT
+  anthropic_api_key: ANTHROPIC_API_KEY
+  notion_token: NOTION_TOKEN
+  telegram_bot_token: TELEGRAM_BOT_TOKEN
+  telegram_chat_id: TELEGRAM_CHAT_ID
