@@ -29,7 +29,7 @@ docker compose up -d --build
 | `orchestrator-ui` | React UI (placeholder) | https://localhost/ |
 | `langfuse` | LLM observability | Internal (port 3000) |
 | `langfuse-db` | Postgres for Langfuse | Internal |
-| `agent-runner` | AI agent container | Internal (placeholder) |
+| `agent-runner` | AI agent container (network-locked) | Internal |
 | `egress-proxy` | Squid allowlist proxy | Internal |
 
 ### Verify
@@ -43,6 +43,22 @@ curl -k https://localhost/api/health
 
 # Health check (direct)
 curl http://localhost:8000/health
+```
+
+### Agent-runner network lockdown
+
+The `agent-runner` service is isolated on a Docker-internal network (`agent_net`) with no
+external route. All outbound traffic goes through the Squid `egress-proxy`, which enforces a
+hostname allowlist (`squid/allowlist.txt`). The root filesystem is read-only and `/workspace` is
+the only writable mount (bound to the target project directory via `CODE_RUNNER_PROJECT_DIR`).
+
+Default allowlist: `github.com`, `api.github.com`, `codeload.github.com`,
+`registry.npmjs.org`, `pypi.org`, `files.pythonhosted.org`, `api.anthropic.com`.
+Per-project additions come from `project.yaml` `egress.allow` at runtime.
+
+```bash
+# Verify the lockdown with the stack running
+bash scripts/verify-egress-lockdown.sh
 ```
 
 ### Tear down

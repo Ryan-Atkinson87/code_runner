@@ -90,17 +90,37 @@ services:
     image: python:3.13-slim
     command: ["sleep", "infinity"]
     env_file: .env
+    environment:
+      - HTTP_PROXY=http://egress-proxy:3128
+      - HTTPS_PROXY=http://egress-proxy:3128
+      - NO_PROXY=localhost,127.0.0.1
+    volumes:
+      - ${CODE_RUNNER_PROJECT_DIR:-./agent-workspace}:/workspace:rw
+    working_dir: /workspace
+    read_only: true
+    tmpfs:
+      - /tmp:size=512M
+      - /root:size=256M
+    depends_on:
+      - egress-proxy
     networks:
-      - code_runner
+      agent_net:
 
   egress-proxy:
     image: ubuntu/squid:latest
+    volumes:
+      - ./squid/squid.conf:/etc/squid/squid.conf:ro
+      - ./squid/allowlist.txt:/etc/squid/allowlist.txt:ro
     networks:
       - code_runner
+      - agent_net
 
 networks:
   code_runner:
     driver: bridge
+  agent_net:
+    driver: bridge
+    internal: true
 
 volumes:
   langfuse-data:
