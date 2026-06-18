@@ -89,7 +89,7 @@ class GitRepo:
             return
         for p in paths:
             resolved = (self._path / p).resolve()
-            if not str(resolved).startswith(str(self._path)):
+            if not resolved.is_relative_to(self._path):
                 raise PathBoundaryError(f"Path {p} resolves outside repo boundary {self._path}")
         self._run("add", "--", *paths)
 

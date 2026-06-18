@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -165,6 +166,14 @@ class TestStagingAndCommitting:
     def test_stage_outside_boundary(self, git_repo: GitRepo) -> None:
         with pytest.raises(PathBoundaryError, match="outside repo boundary"):
             git_repo.stage("../../etc/passwd")
+
+    def test_stage_sibling_directory_prefix_collision(self, git_repo: GitRepo) -> None:
+        sibling = git_repo.path.parent / (git_repo.path.name + "_evil")
+        sibling.mkdir()
+        (sibling / "payload.txt").write_text("bad")
+        relative = os.path.relpath(sibling / "payload.txt", git_repo.path)
+        with pytest.raises(PathBoundaryError, match="outside repo boundary"):
+            git_repo.stage(relative)
 
     def test_commit_on_clean_tree_fails(self, git_repo: GitRepo) -> None:
         with pytest.raises(GitError):
