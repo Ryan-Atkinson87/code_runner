@@ -1,0 +1,12 @@
+class GitHubError(Exception):
+    def __init__(self, message: str, status_code: int | None = None):
+        super().__init__(message)
+        self.status_code = status_code
+
+
+class GitHubAuthError(GitHubError):
+    pass
+
+
+class BranchProtectionError(GitHubError):
+    pass
