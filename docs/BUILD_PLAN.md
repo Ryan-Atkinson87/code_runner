@@ -68,7 +68,7 @@ test/lint/typecheck gates.
 
 ### Issues
 
-- [ ] #9 — Deterministic git operations wrapper bounded to a repo path _(deps: #1)_
+- [x] #9 — Deterministic git operations wrapper bounded to a repo path _(deps: #1)_
 - [ ] #10 — Agent-branch lifecycle: per-wave branch creation, merge-sync, slug derivation _(deps: #9, #4)_
 - [ ] #11 — Feature-branch lifecycle: per-issue branch, review diff, serialised merge, delete _(deps: #10)_
 - [ ] #12 — Test/lint/typecheck gate runner with structured per-repo results _(deps: #1, #4)_
