@@ -70,7 +70,7 @@ test/lint/typecheck gates.
 
 - [x] #9 — Deterministic git operations wrapper bounded to a repo path _(deps: #1)_
 - [x] #10 — Agent-branch lifecycle: per-wave branch creation, merge-sync, slug derivation _(deps: #9, #4)_
-- [ ] #11 — Feature-branch lifecycle: per-issue branch, review diff, serialised merge, delete _(deps: #10)_
+- [x] #11 — Feature-branch lifecycle: per-issue branch, review diff, serialised merge, delete _(deps: #10)_
 - [x] #12 — Test/lint/typecheck gate runner with structured per-repo results _(deps: #1, #4)_
 - [x] #13 — GitHub API client for hand-off (PAT-scoped: push agent branch + PRs only) _(deps: #5)_
 - [ ] #14 — Hand-off engine: push agent branch and open one structured PR per repo _(deps: #10, #12, #13)_
