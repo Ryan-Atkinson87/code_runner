@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 
 from app.github.errors import BranchProtectionError, GitHubAuthError, GitHubError
-from app.github.models import PullRequest
+from app.github.models import Issue, Milestone, PullRequest
 
 PROTECTED_BRANCHES = frozenset({"main", "master", "dev", "develop"})
 
@@ -132,6 +132,71 @@ class GitHubClient:
             params=params,
         )
         return [self._parse_pr(pr) for pr in response.json()]
+
+    def list_milestones(
+        self,
+        repo: str,
+        state: str = "open",
+    ) -> list[Milestone]:
+        response = self._request(
+            "GET",
+            f"/repos/{self._owner}/{repo}/milestones",
+            params={"state": state, "per_page": "100"},
+        )
+        return [self._parse_milestone(m) for m in response.json()]
+
+    def list_issues(
+        self,
+        repo: str,
+        milestone_number: int,
+        state: str = "open",
+    ) -> list[Issue]:
+        response = self._request(
+            "GET",
+            f"/repos/{self._owner}/{repo}/issues",
+            params={
+                "milestone": str(milestone_number),
+                "state": state,
+                "per_page": "100",
+            },
+        )
+        items = response.json()
+        issues = [
+            self._parse_issue(i, repo)
+            for i in items
+            if "pull_request" not in i
+        ]
+        return issues
+
+    @staticmethod
+    def _parse_milestone(data: dict[str, Any]) -> Milestone:
+        return Milestone(
+            number=data["number"],
+            title=data["title"],
+            state=data["state"],
+        )
+
+    @staticmethod
+    def _parse_issue(data: dict[str, Any], repo: str) -> Issue:
+        ms_data = data.get("milestone")
+        milestone = (
+            Milestone(
+                number=ms_data["number"],
+                title=ms_data["title"],
+                state=ms_data["state"],
+            )
+            if ms_data
+            else None
+        )
+        return Issue(
+            number=data["number"],
+            title=data["title"],
+            body=data.get("body") or "",
+            state=data["state"],
+            repo=repo,
+            milestone=milestone,
+            labels=[lbl["name"] for lbl in data.get("labels", [])],
+        )
 
     @staticmethod
     def _parse_pr(data: dict[str, Any]) -> PullRequest:
