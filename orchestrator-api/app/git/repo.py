@@ -139,3 +139,32 @@ class GitRepo:
     def rev_parse(self, ref: str) -> str:
         result = self._run("rev-parse", ref)
         return result.stdout.strip()
+
+    def reset_hard(self, ref: str = "HEAD") -> None:
+        self._run("reset", "--hard", ref)
+
+    def clean_untracked(self, directories: bool = True) -> None:
+        args = ["clean", "-f"]
+        if directories:
+            args.append("-d")
+        self._run(*args)
+
+    def merge_base(self, ref1: str, ref2: str) -> str:
+        result = self._run("merge-base", ref1, ref2)
+        return result.stdout.strip()
+
+    def was_merged_into(self, branch: str, into: str) -> bool:
+        """Check if branch was merged into another via a merge commit.
+
+        Unlike is_merged (reachability only), this confirms a merge commit
+        exists whose parent is branch's tip. Used to distinguish an empty
+        branch from one that was merged but not yet deleted.
+        """
+        tip = self.rev_parse(branch)
+        result = self._run("log", f"{branch}..{into}", "--merges", "--format=%P")
+        for line in result.stdout.strip().split("\n"):
+            if not line.strip():
+                continue
+            if tip in line.split():
+                return True
+        return False
