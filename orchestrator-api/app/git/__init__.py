@@ -2,10 +2,14 @@ from app.git.agent_branch import AgentBranch, agent_branch_name, slugify_wave
 from app.git.errors import GitError, MergeConflictError, PathBoundaryError
 from app.git.feature_branch import FeatureBranch
 from app.git.merge_queue import MergeQueue
+from app.git.recovery import BranchClassification, BranchRecovery, BranchState
 from app.git.repo import GitRepo
 
 __all__ = [
     "AgentBranch",
+    "BranchClassification",
+    "BranchRecovery",
+    "BranchState",
     "FeatureBranch",
     "GitError",
     "GitRepo",
