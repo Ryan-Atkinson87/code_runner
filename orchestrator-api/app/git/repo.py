@@ -129,6 +129,9 @@ class GitRepo:
         result = self._run("diff", "--stat", f"{base}...{head}")
         return result.stdout.strip()
 
+    def rebase(self, onto: str) -> None:
+        self._run("rebase", onto)
+
     def rev_parse(self, ref: str) -> str:
         result = self._run("rev-parse", ref)
         return result.stdout.strip()
