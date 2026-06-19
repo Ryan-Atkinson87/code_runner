@@ -125,6 +125,10 @@ class GitRepo:
         merged_branches = [line.strip().lstrip("* ") for line in result.stdout.strip().split("\n")]
         return branch in merged_branches
 
+    def diff(self, base: str, head: str) -> str:
+        result = self._run("diff", f"{base}...{head}")
+        return result.stdout
+
     def diff_stat(self, base: str, head: str) -> str:
         result = self._run("diff", "--stat", f"{base}...{head}")
         return result.stdout.strip()
