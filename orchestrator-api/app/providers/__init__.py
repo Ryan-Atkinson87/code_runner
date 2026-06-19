@@ -1,4 +1,5 @@
 from app.providers.adapter import ProviderAdapter
+from app.providers.claude import ClaudeAdapter
 from app.providers.types import (
     EventKind,
     NormalisedEvent,
@@ -10,6 +11,7 @@ from app.providers.types import (
 )
 
 __all__ = [
+    "ClaudeAdapter",
     "EventKind",
     "NormalisedEvent",
     "ProviderAdapter",
