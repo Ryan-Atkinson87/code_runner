@@ -38,4 +38,24 @@ class V001_Baseline:
         """)
 
 
-ALL_MIGRATIONS: list[type[Migration]] = [V001_Baseline]  # type: ignore[type-abstract]
+class V002_IssueMarkers:
+    version = 2
+    description = "Per-issue wave-loop step markers for crash recovery"
+
+    def apply(self, conn: sqlite3.Connection) -> None:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS issue_markers (
+                run_id INTEGER NOT NULL REFERENCES runs(id),
+                issue_number INTEGER NOT NULL,
+                last_step TEXT NOT NULL,
+                checkpoint_count INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                PRIMARY KEY (run_id, issue_number)
+            );
+        """)
+
+
+ALL_MIGRATIONS: list[type[Migration]] = [  # type: ignore[type-abstract]
+    V001_Baseline,
+    V002_IssueMarkers,
+]

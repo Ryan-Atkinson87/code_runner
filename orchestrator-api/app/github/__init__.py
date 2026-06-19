@@ -4,12 +4,14 @@ from app.github.errors import (
     GitHubAuthError,
     GitHubError,
 )
-from app.github.models import PullRequest
+from app.github.models import Issue, Milestone, PullRequest
 
 __all__ = [
     "BranchProtectionError",
     "GitHubAuthError",
     "GitHubClient",
     "GitHubError",
+    "Issue",
+    "Milestone",
     "PullRequest",
 ]
