@@ -123,6 +123,12 @@ class TestCreatePullRequest:
             assert not isinstance(exc_info.value, BranchProtectionError)
 
 
+class TestMergePullRequestDenyMethod:
+    def test_raises_not_implemented(self, client: GitHubClient) -> None:
+        with pytest.raises(NotImplementedError, match="human gate"):
+            client.merge_pull_request("repo", 42)
+
+
 class TestGetPullRequest:
     def test_success(self, client: GitHubClient) -> None:
         with patch.object(
