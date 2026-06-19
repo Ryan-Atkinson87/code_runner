@@ -48,6 +48,19 @@ class UsageReport(BaseModel):
     duration_seconds: float = 0.0
 
 
+class AuditRecord(BaseModel):
+    """Audit record for a single tool call (PostToolUse hook output).
+
+    Collected per session for the Layer-1 raw capture (Phase 6, #46).
+    """
+
+    tool_name: str
+    tool_input: dict[str, object] = Field(default_factory=dict)
+    blocked: bool = False
+    block_reason: str = ""
+    timestamp: float = Field(default=0.0)
+
+
 class SessionResult(BaseModel):
     """Result of a single provider session (Spec §3.1).
 
@@ -59,6 +72,7 @@ class SessionResult(BaseModel):
     usage: UsageReport = Field(default_factory=UsageReport)
     outcome: SessionOutcome
     artifacts: list[str] = Field(default_factory=list)
+    audit_log: list[AuditRecord] = Field(default_factory=list)
 
 
 ProviderName = Literal["claude", "codex", "gemini"]
