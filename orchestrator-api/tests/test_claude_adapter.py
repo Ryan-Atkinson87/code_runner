@@ -605,6 +605,126 @@ class TestClaudeAdapterRunSession:
             assert isinstance(artifact, str)
 
 
+class TestClaudeAdapterHooks:
+    """Tests that the adapter integrates PreToolUse/PostToolUse hooks."""
+
+    def _setup_git_repo(self, tmp_path: Path) -> Path:
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@test.com"],
+            cwd=tmp_path,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test"],
+            cwd=tmp_path,
+            capture_output=True,
+        )
+        (tmp_path / "existing.py").write_text("old = True")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True)
+        return tmp_path
+
+    def _mock_client(self, responses: list[SimpleNamespace]) -> AsyncMock:
+        client = AsyncMock()
+        stream_mocks = []
+        for resp in responses:
+            stream_ctx = AsyncMock()
+            stream_ctx.__aenter__ = AsyncMock(return_value=stream_ctx)
+            stream_ctx.__aexit__ = AsyncMock(return_value=False)
+            stream_ctx.get_final_message = AsyncMock(return_value=resp)
+            stream_mocks.append(stream_ctx)
+        client.messages.stream = MagicMock(side_effect=stream_mocks)
+        return client
+
+    @pytest.mark.asyncio
+    async def test_blocked_tool_returns_permission_denied(self, tmp_path: Path) -> None:
+        workdir = self._setup_git_repo(tmp_path)
+        tool_call = _make_message(
+            content=[
+                _make_tool_use_block("bash", {"command": "cat .env"}, "t1"),
+            ],
+            stop_reason="tool_use",
+        )
+        final = _make_message(
+            content=[_make_text_block("OK, I won't do that")],
+            stop_reason="end_turn",
+        )
+        client = self._mock_client([tool_call, final])
+        adapter = ClaudeAdapter(client)
+
+        result = await adapter.run_session(
+            workdir=workdir,
+            role=SessionRole.IMPLEMENTOR,
+            model="claude-sonnet-4-6",
+            allowed_tools=["bash"],
+            prompt="Read secrets",
+            context_files=[],
+        )
+
+        assert result.outcome == SessionOutcome.COMPLETED
+        tool_results = [e for e in result.events if e.kind == EventKind.TOOL_RESULT]
+        assert any("Permission denied" in e.content for e in tool_results)
+
+    @pytest.mark.asyncio
+    async def test_blocked_tool_produces_audit_record(self, tmp_path: Path) -> None:
+        workdir = self._setup_git_repo(tmp_path)
+        tool_call = _make_message(
+            content=[
+                _make_tool_use_block("bash", {"command": "cat .env"}, "t1"),
+            ],
+            stop_reason="tool_use",
+        )
+        final = _make_message(
+            content=[_make_text_block("OK")],
+            stop_reason="end_turn",
+        )
+        client = self._mock_client([tool_call, final])
+        adapter = ClaudeAdapter(client)
+
+        result = await adapter.run_session(
+            workdir=workdir,
+            role=SessionRole.IMPLEMENTOR,
+            model="claude-sonnet-4-6",
+            allowed_tools=["bash"],
+            prompt="Read secrets",
+            context_files=[],
+        )
+
+        assert len(result.audit_log) == 1
+        assert result.audit_log[0].blocked is True
+        assert "secret" in result.audit_log[0].block_reason
+
+    @pytest.mark.asyncio
+    async def test_allowed_tool_produces_audit_record(self, tmp_path: Path) -> None:
+        workdir = self._setup_git_repo(tmp_path)
+        tool_call = _make_message(
+            content=[
+                _make_tool_use_block("bash", {"command": "echo hello"}, "t1"),
+            ],
+            stop_reason="tool_use",
+        )
+        final = _make_message(
+            content=[_make_text_block("Done")],
+            stop_reason="end_turn",
+        )
+        client = self._mock_client([tool_call, final])
+        adapter = ClaudeAdapter(client)
+
+        result = await adapter.run_session(
+            workdir=workdir,
+            role=SessionRole.IMPLEMENTOR,
+            model="claude-sonnet-4-6",
+            allowed_tools=["bash"],
+            prompt="Say hello",
+            context_files=[],
+        )
+
+        assert len(result.audit_log) == 1
+        assert result.audit_log[0].blocked is False
+        assert result.audit_log[0].tool_name == "bash"
+
+
 class TestClaudeAdapterIsProviderAdapter:
     def test_isinstance(self) -> None:
         from app.providers.adapter import ProviderAdapter

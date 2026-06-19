@@ -9,7 +9,9 @@ import anthropic
 
 from app.git.repo import GitRepo
 from app.providers.adapter import ProviderAdapter
+from app.providers.hooks import ToolPermissionError, create_audit_record, pre_tool_use_check
 from app.providers.types import (
+    AuditRecord,
     EventKind,
     NormalisedEvent,
     SessionOutcome,
@@ -54,6 +56,7 @@ class ClaudeAdapter(ProviderAdapter):
         messages: list[dict[str, object]] = [{"role": "user", "content": user_content}]
 
         events: list[NormalisedEvent] = []
+        audit_log: list[AuditRecord] = []
         tokens_in = 0
         tokens_out = 0
         start = time.monotonic()
@@ -76,8 +79,9 @@ class ClaudeAdapter(ProviderAdapter):
 
                 tool_blocks = [b for b in response.content if b.type == "tool_use"]
                 messages.append({"role": "assistant", "content": response.content})
-                tool_results = await _execute_tools(tool_blocks, workdir)
+                tool_results, new_audit = await _execute_tools(tool_blocks, workdir)
                 events.extend(_tool_result_events(tool_blocks, tool_results))
+                audit_log.extend(new_audit)
                 messages.append({"role": "user", "content": tool_results})
 
         except (anthropic.APIError, anthropic.APIConnectionError):
@@ -98,6 +102,7 @@ class ClaudeAdapter(ProviderAdapter):
             ),
             outcome=outcome,
             artifacts=artifacts,
+            audit_log=audit_log,
         )
 
     async def _call_model(
@@ -188,14 +193,33 @@ def _map_stop_reason(stop_reason: str | None) -> SessionOutcome:
 async def _execute_tools(
     tool_blocks: list[anthropic.types.ToolUseBlock],
     workdir: Path,
-) -> list[dict[str, object]]:
+) -> tuple[list[dict[str, object]], list[AuditRecord]]:
     results: list[dict[str, object]] = []
+    audit: list[AuditRecord] = []
     for block in tool_blocks:
+        tool_input = block.input if isinstance(block.input, dict) else {}
+
+        try:
+            pre_tool_use_check(block.name, tool_input, workdir)
+        except ToolPermissionError as exc:
+            results.append(
+                {
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": f"Permission denied: {exc}",
+                    "is_error": True,
+                }
+            )
+            audit.append(
+                create_audit_record(block.name, tool_input, blocked=True, block_reason=str(exc))
+            )
+            continue
+
         try:
             if block.name == "bash":
-                output = _execute_bash(block.input, workdir)
+                output = _execute_bash(tool_input, workdir)
             elif block.name == "str_replace_based_edit_tool":
-                output = _execute_text_editor(block.input, workdir)
+                output = _execute_text_editor(tool_input, workdir)
             else:
                 output = f"Unknown tool: {block.name}"
         except Exception as exc:
@@ -207,6 +231,7 @@ async def _execute_tools(
                     "is_error": True,
                 }
             )
+            audit.append(create_audit_record(block.name, tool_input))
             continue
 
         results.append(
@@ -216,7 +241,8 @@ async def _execute_tools(
                 "content": output,
             }
         )
-    return results
+        audit.append(create_audit_record(block.name, tool_input))
+    return results, audit
 
 
 def _execute_bash(tool_input: dict[str, object], workdir: Path) -> str:
