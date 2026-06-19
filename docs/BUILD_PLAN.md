@@ -30,7 +30,7 @@ progress and has two parts:
 | # | Phase | Status | Depends on |
 |---|---|---|---|
 | 1 | Foundations | ✅ | — |
-| 2 | Git/PR engine | 🔄 | 1 |
+| 2 | Git/PR engine | ✅ | 1 |
 | 3 | Claude adapter + wave loop | ⬜ | 1, 2 |
 | 4 | Usage monitor | ⬜ | 3 |
 | 5 | Trackers + notifications | ⬜ | 3 |
@@ -64,7 +64,7 @@ schema + `project.yaml` loader.
 Branch lifecycle (agent branch, feature branches, local-only flow, hand-off push + PR);
 test/lint/typecheck gates.
 
-**Status:** 🔄 (planned — issues created)
+**Status:** ✅ (complete — milestone closed 2026-06-19)
 
 ### Issues
 
@@ -74,7 +74,7 @@ test/lint/typecheck gates.
 - [x] #12 — Test/lint/typecheck gate runner with structured per-repo results _(deps: #1, #4)_
 - [x] #13 — GitHub API client for hand-off (PAT-scoped: push agent branch + PRs only) _(deps: #5)_
 - [x] #14 — Hand-off engine: push agent branch and open one structured PR per repo _(deps: #10, #12, #13)_
-- [ ] #15 — Branch-state inference and discard-and-restart for crash recovery _(deps: #11)_
+- [x] #15 — Branch-state inference and discard-and-restart for crash recovery _(deps: #11)_
 
 **Workable now (Phase-1 deps permitting):** #9, #12, #13 (each depends only on Phase-1 issues).
 Then #10 (needs #9), #11 (needs #10), #15 (needs #11), and #14 last (needs #10, #12, #13). The
