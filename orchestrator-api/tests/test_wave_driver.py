@@ -338,3 +338,99 @@ class TestWaveDriverEndToEnd:
         assert isinstance(result, WaveResult)
         assert len(result.issue_outcomes) == 2
         assert mock_handoff.push_and_open_pr.called
+
+
+class TestWaveHumanGate:
+    """Wave stops at opening the hand-off PR — human gate (Spec §5.4 step 5).
+
+    The engine opens a PR and returns. It must NOT merge the PR or clean up
+    branches; those happen only after the human reviews and merges. The
+    merge_pull_request deny-method (#104) is a structural guard on
+    GitHubClient; these tests verify run_wave never attempts either action.
+    """
+
+    @pytest.mark.asyncio
+    async def test_wave_stops_at_pr_no_merge_no_cleanup(self, tmp_path: Path) -> None:
+        repo_path = _init_repo(tmp_path)
+        conn = _init_db()
+
+        wave = WaveAssemblyResult(
+            ordered_issues=[
+                WaveIssue(number=1, title="Feature A", repo="test-repo"),
+            ],
+            unplanned=False,
+        )
+
+        async def mock_run_session(**kwargs: object) -> SessionResult:
+            prompt = str(kwargs.get("prompt", ""))
+            if "APPROVED" in prompt or "Review" in prompt or "review" in prompt:
+                return _session_result("APPROVED. Looks good.")
+            if "PR body" in prompt or "Write a concise" in prompt:
+                return _session_result("PR body: implemented feature")
+            return _session_result("Implementation done")
+
+        adapter = AsyncMock()
+        adapter.run_session = AsyncMock(side_effect=mock_run_session)
+
+        def mock_run_gates(**kwargs: object) -> object:
+            from app.gates.runner import GateResult, GateRunResult, GateStatus
+
+            return GateRunResult(
+                repo_name="test-repo",
+                results=(
+                    GateResult("test", GateStatus.PASSED, 0, "ok", "", 1.0),
+                    GateResult("lint", GateStatus.PASSED, 0, "ok", "", 0.5),
+                    GateResult("typecheck", GateStatus.PASSED, 0, "ok", "", 0.3),
+                ),
+            )
+
+        mock_handoff = MagicMock()
+        mock_handoff.push_and_open_pr = MagicMock(
+            return_value=PullRequest(
+                number=42,
+                title="Wave: wave-1",
+                body="summary",
+                html_url="https://github.com/test/pr/42",
+                head_branch="code-runner/wave-1",
+                base_branch="dev",
+                state="open",
+            )
+        )
+
+        with (
+            patch("app.engine.implement_loop.run_gates", side_effect=mock_run_gates),
+            patch(
+                "app.git.agent_branch.AgentBranch.create_or_reuse",
+                return_value=True,
+            ),
+        ):
+            subprocess.run(
+                ["git", "checkout", "-b", "code-runner/wave-1"],
+                cwd=repo_path,
+                capture_output=True,
+            )
+
+            result = await run_wave(
+                wave=wave,
+                project_config=_project_config(),
+                profile=_profile(),
+                adapter=adapter,
+                handoff_engine=mock_handoff,
+                db_conn=conn,
+                repo_paths={"test-repo": repo_path},
+                skills=[],
+                base_prompts=BASE_PROMPTS,
+                overlays=[],
+                model="claude-sonnet-4-6",
+                wave_name="wave-1",
+                run_id=1,
+                cap=1,
+            )
+
+        assert isinstance(result, WaveResult)
+        completed = [o for o in result.issue_outcomes if o.completed]
+        assert len(completed) == 1
+
+        mock_handoff.push_and_open_pr.assert_called_once()
+        mock_handoff.cleanup_after_merge.assert_not_called()
+        mock_handoff.merge_pull_request.assert_not_called()
