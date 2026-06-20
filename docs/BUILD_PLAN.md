@@ -97,20 +97,23 @@ Listed in dependency order. Three workstreams run largely in parallel: the **pro
 (#16→#17→#18), the **instruction system** (#19→#20, #21→#22, #23), and the **wave-loop engine**
 (#24, #25, #26 → #27/#28 → #29). The driver #29 is the capstone that assembles everything.
 
-- [ ] #16 — Define ProviderAdapter interface and normalised result/event/usage types _(deps: #1)_
-- [ ] #19 — Canonical skill model and loader (metadata + body; tool-base + per-project) _(deps: #1)_
-- [ ] #21 — execution-profile.yaml schema and fail-fast loader _(deps: #1, #4)_
-- [ ] #24 — Per-issue state markers and resume-or-reset crash recovery _(deps: #3)_ — deferred from Phase 2
-- [ ] #25 — Wave concurrency scheduler (parallel-across-repos, serialised merge queue, cap) _(deps: #11, #4)_ — deferred from Phase 2
-- [ ] #26 — GitHub issue/milestone reader and dependency-order wave assembly _(deps: #13, #4)_
-- [ ] #17 — Implement Claude provider adapter via Claude Agent SDK _(deps: #16, #9, #4)_
-- [ ] #18 — Claude tool-permission and hook lockdown (allowed_tools, strict-deny, Pre/PostToolUse) _(deps: #17)_
-- [ ] #20 — Persona composition (type × speciality with stage-skill filtering) _(deps: #19)_
-- [ ] #22 — Provider-format renderer (compose personas → CLAUDE.md + skill files) _(deps: #20, #21)_
-- [ ] #23 — Tech-lead profile-generation session (propose profile, human-confirm before write) _(deps: #17, #19, #21)_
-- [ ] #27 — Bounded implement-gate-fix loop with 30-min checkpointing and stuck-agent guard _(deps: #11, #12, #17, #22, #24)_
-- [ ] #28 — Bounded internal-review cycle (PR-body fill, review→feedback→re-review, merge) _(deps: #11, #17, #22, #24)_
-- [ ] #29 — Wave-loop driver: end-to-end orchestration of the deterministic wave loop _(deps: #18, #22, #23, #25, #26, #27, #28, #14)_
+- [x] #16 — Define ProviderAdapter interface and normalised result/event/usage types _(deps: #1)_
+- [x] #19 — Canonical skill model and loader (metadata + body; tool-base + per-project) _(deps: #1)_
+- [x] #21 — execution-profile.yaml schema and fail-fast loader _(deps: #1, #4)_
+- [x] #24 — Per-issue state markers and resume-or-reset crash recovery _(deps: #3)_ — deferred from Phase 2
+- [x] #25 — Wave concurrency scheduler (parallel-across-repos, serialised merge queue, cap) _(deps: #11, #4)_ — deferred from Phase 2
+- [x] #26 — GitHub issue/milestone reader and dependency-order wave assembly _(deps: #13, #4)_
+- [x] #17 — Implement Claude provider adapter via Claude Agent SDK _(deps: #16, #9, #4)_
+- [x] #18 — Claude tool-permission and hook lockdown (allowed_tools, strict-deny, Pre/PostToolUse) _(deps: #17)_
+- [x] #20 — Persona composition (type × speciality with stage-skill filtering) _(deps: #19)_
+- [x] #22 — Provider-format renderer (compose personas → CLAUDE.md + skill files) _(deps: #20, #21)_
+- [x] #23 — Tech-lead profile-generation session (propose profile, human-confirm before write) _(deps: #17, #19, #21)_
+- [x] #27 — Bounded implement-gate-fix loop with 30-min checkpointing and stuck-agent guard _(deps: #11, #12, #17, #22, #24)_
+- [x] #28 — Bounded internal-review cycle (PR-body fill, review→feedback→re-review, merge) _(deps: #11, #17, #22, #24)_
+- [x] #29 — Wave-loop driver: end-to-end orchestration of the deterministic wave loop _(deps: #18, #22, #23, #25, #26, #27, #28, #14)_
+- [x] #104 — Add merge_pull_request deny-method to GitHubClient (human-gate enforcement) _(deps: #13)_
+- [ ] #105 — Add end-to-end test asserting wave stops at PR creation _(deps: #29, #104)_
+- [ ] #106 — Add architectural CI test that greps for unauthorised GitHub merge calls _(deps: #104)_
 
 **Workable now (Phase-1/2 deps permitting):** #16, #19, #21, #24, #26 each depend only on
 Phase-1/2 issues; #25 needs Phase-2 #11. After #16: #17 → #18. After #19: #20; #20 + #21 → #22;
