@@ -112,8 +112,8 @@ Listed in dependency order. Three workstreams run largely in parallel: the **pro
 - [x] #28 — Bounded internal-review cycle (PR-body fill, review→feedback→re-review, merge) _(deps: #11, #17, #22, #24)_
 - [x] #29 — Wave-loop driver: end-to-end orchestration of the deterministic wave loop _(deps: #18, #22, #23, #25, #26, #27, #28, #14)_
 - [x] #104 — Add merge_pull_request deny-method to GitHubClient (human-gate enforcement) _(deps: #13)_
-- [ ] #105 — Add end-to-end test asserting wave stops at PR creation _(deps: #29, #104)_
-- [ ] #106 — Add architectural CI test that greps for unauthorised GitHub merge calls _(deps: #104)_
+- [x] #105 — Add end-to-end test asserting wave stops at PR creation _(deps: #29, #104)_
+- [x] #106 — Add architectural CI test that greps for unauthorised GitHub merge calls _(deps: #104)_
 
 **Workable now (Phase-1/2 deps permitting):** #16, #19, #21, #24, #26 each depend only on
 Phase-1/2 issues; #25 needs Phase-2 #11. After #16: #17 → #18. After #19: #20; #20 + #21 → #22;
