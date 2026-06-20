@@ -113,6 +113,11 @@ class GitHubClient:
         )
         return self._parse_pr(response.json())
 
+    def merge_pull_request(self, repo: str, number: int) -> None:
+        raise NotImplementedError(
+            "Engine must not merge GitHub PRs — human gate (Spec §5.4)"
+        )
+
     def get_pull_request(self, repo: str, number: int) -> PullRequest:
         response = self._request("GET", f"/repos/{self._owner}/{repo}/pulls/{number}")
         return self._parse_pr(response.json())
