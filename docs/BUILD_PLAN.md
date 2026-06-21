@@ -31,11 +31,11 @@ progress and has two parts:
 |---|---|---|---|
 | 1 | Foundations | ✅ | — |
 | 2 | Git/PR engine | ✅ | 1 |
-| 3 | Claude adapter + wave loop | ⬜ | 1, 2 |
-| 4 | Usage monitor | ⬜ | 3 |
-| 5 | Trackers + notifications | ⬜ | 3 |
+| 3 | Claude adapter + wave loop | ✅ | 1, 2 |
+| 4 | Usage monitor | 🔄 | 3 |
+| 5 | Trackers + notifications | 🔄 | 3 |
 | 6 | Observability + UI | ⬜ | 3, 4, 5 |
-| 7 | Multi-provider | ⬜ | 3 |
+| 7 | Multi-provider | 🔄 | 3 |
 
 ---
 
@@ -89,7 +89,7 @@ Full end-to-end on Trive with one provider. Instruction-file generation. Interna
 Also absorbs the deterministic loop-wiring deferred from Phase 2 (per-issue state markers,
 concurrency scheduler) since it sequences the wave-loop steps defined here.
 
-**Status:** 🔄 (planned — issues created)
+**Status:** ✅ (complete — milestone closed 2026-06-20)
 
 ### Issues
 
