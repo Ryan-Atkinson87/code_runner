@@ -55,7 +55,25 @@ class V002_IssueMarkers:
         """)
 
 
+class V003_UsagePauses:
+    version = 3
+    description = "Usage pause state for hard pause / automatic resume"
+
+    def apply(self, conn: sqlite3.Connection) -> None:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS usage_pauses (
+                run_id INTEGER PRIMARY KEY REFERENCES runs(id),
+                governing_meter_kind TEXT NOT NULL,
+                governing_utilisation REAL NOT NULL,
+                resets_at REAL,
+                paused_at TEXT NOT NULL DEFAULT (datetime('now')),
+                resumed_at TEXT
+            );
+        """)
+
+
 ALL_MIGRATIONS: list[type[Migration]] = [  # type: ignore[type-abstract]
     V001_Baseline,
     V002_IssueMarkers,
+    V003_UsagePauses,
 ]
