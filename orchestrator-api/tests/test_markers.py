@@ -253,8 +253,8 @@ class TestMigration:
         }
         assert "issue_markers" in tables
 
-    def test_migration_version_2(self, store: StateStore) -> None:
-        assert store.current_version() == 2
+    def test_migration_version_latest(self, store: StateStore) -> None:
+        assert store.current_version() == 3
 
 
 class TestWaveStep:
