@@ -6,10 +6,13 @@ from app.usage.models import (
     governing_meter,
 )
 from app.usage.reader import UsageReader
+from app.usage.subscription import FallbackLevel, SubscriptionUsageReader
 
 __all__ = [
+    "FallbackLevel",
     "Meter",
     "MeterKind",
+    "SubscriptionUsageReader",
     "UsageReader",
     "UsageSnapshot",
     "applicable_meters",
