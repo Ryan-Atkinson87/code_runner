@@ -8,6 +8,7 @@ from app.usage.models import (
 )
 from app.usage.reader import UsageReader
 from app.usage.subscription import FallbackLevel, SubscriptionUsageReader
+from app.usage.threshold import ThresholdResult, evaluate_threshold, human_reserve_meter
 
 __all__ = [
     "ApiUsageReader",
@@ -15,8 +16,11 @@ __all__ = [
     "Meter",
     "MeterKind",
     "SubscriptionUsageReader",
+    "ThresholdResult",
     "UsageReader",
     "UsageSnapshot",
     "applicable_meters",
+    "evaluate_threshold",
     "governing_meter",
+    "human_reserve_meter",
 ]
