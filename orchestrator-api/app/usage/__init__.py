@@ -14,6 +14,7 @@ from app.usage.pause import (
     UsagePauseManager,
     wait_for_resume,
 )
+from app.usage.policy import PolicyAction, UsagePolicy, UsagePolicyState
 from app.usage.reader import UsageReader
 from app.usage.subscription import FallbackLevel, SubscriptionUsageReader
 from app.usage.threshold import ThresholdResult, evaluate_threshold, human_reserve_meter
@@ -25,11 +26,14 @@ __all__ = [
     "FallbackLevel",
     "Meter",
     "MeterKind",
+    "PolicyAction",
     "ResumeAction",
     "ResumeStrategy",
     "SubscriptionUsageReader",
     "ThresholdResult",
     "UsagePauseManager",
+    "UsagePolicy",
+    "UsagePolicyState",
     "UsageReader",
     "UsageSnapshot",
     "apply_cap_step",
