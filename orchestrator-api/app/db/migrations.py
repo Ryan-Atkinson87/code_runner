@@ -72,8 +72,32 @@ class V003_UsagePauses:
         """)
 
 
+class V004_Blockers:
+    version = 4
+    description = "Structured blocker records for park/list/resolve"
+
+    def apply(self, conn: sqlite3.Connection) -> None:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS blockers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id INTEGER NOT NULL REFERENCES runs(id),
+                issue_number INTEGER NOT NULL,
+                blocker_type TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                needed_to_unblock TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'parked',
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                resolved_at TEXT
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_blockers_run_status
+                ON blockers (run_id, status);
+        """)
+
+
 ALL_MIGRATIONS: list[type[Migration]] = [  # type: ignore[type-abstract]
     V001_Baseline,
     V002_IssueMarkers,
     V003_UsagePauses,
+    V004_Blockers,
 ]
