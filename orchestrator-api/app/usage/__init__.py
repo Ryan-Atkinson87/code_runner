@@ -1,3 +1,4 @@
+from app.usage.api_reader import ApiUsageReader
 from app.usage.models import (
     Meter,
     MeterKind,
@@ -9,6 +10,7 @@ from app.usage.reader import UsageReader
 from app.usage.subscription import FallbackLevel, SubscriptionUsageReader
 
 __all__ = [
+    "ApiUsageReader",
     "FallbackLevel",
     "Meter",
     "MeterKind",
