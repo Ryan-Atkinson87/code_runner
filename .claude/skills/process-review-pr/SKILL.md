@@ -54,6 +54,6 @@ Skip this step for backend-only PRs.
 
 **Do not merge PRs — merging is the human's responsibility.** Post the review comment (sign-off or request-changes) then notify the human in the terminal per `workflow-code-review` Step 9.
 
-If `workflow-accessibility-testing` or `workflow-responsiveness-testing` raised non-blocking findings, confirm those follow-up issues are created and assigned to the appropriate milestone before posting the sign-off.
+Before posting the sign-off, confirm that **all** non-blocking findings from `workflow-code-review`, `workflow-accessibility-testing`, and `workflow-responsiveness-testing` have been filed as GitHub issues and assigned to an appropriate open milestone (the current milestone if the work fits there, otherwise the next milestone where it makes sense).
 
 After the human confirms the PR has merged, complete `workflow-code-review` Step 9 (check off `docs/BUILD_PLAN.md` and apply `workflow-notion-sync`).

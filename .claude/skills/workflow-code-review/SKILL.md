@@ -90,7 +90,7 @@ For each finding:
 - Reference the specific file and line
 - State the category: `blocking` (must fix before merge) or `non-blocking` (fix or note in a follow-up issue)
 - For `blocking` comments, state exactly what is required to resolve it
-- For `non-blocking` comments, create a follow-up issue if the work is worth tracking, and reference it in the comment
+- For `non-blocking` comments, create a GitHub issue for the finding and assign it to an appropriate open milestone — the current milestone if the work fits there, otherwise the next milestone where it makes sense. Reference the new issue number in the PR comment
 
 ## Step 8: Sign off or request changes
 
