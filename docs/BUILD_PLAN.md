@@ -32,7 +32,7 @@ progress and has two parts:
 | 1 | Foundations | ✅ | — |
 | 2 | Git/PR engine | ✅ | 1 |
 | 3 | Claude adapter + wave loop | ✅ | 1, 2 |
-| 4 | Usage monitor | 🔄 | 3 |
+| 4 | Usage monitor | ✅ | 3 |
 | 5 | Trackers + notifications | 🔄 | 3 |
 | 6 | Observability + UI | ⬜ | 3, 4, 5 |
 | 7 | Multi-provider | 🔄 | 3 |
@@ -128,7 +128,7 @@ Phase 3 is gated on Phases 1 and 2 merging first.
 Meters, 80%-most-restrictive rule, hard pause/resume, peak-hour throttle, override, Agent SDK
 credit handling.
 
-**Status:** 🔄 (planned — issues created)
+**Status:** ✅ (complete — milestone closed 2026-06-22)
 
 ### Issues
 
@@ -136,14 +136,14 @@ Listed in dependency order. The meter model (#30) is the foundation; the two rea
 and the threshold/pause/cap layers build on it. #37 is the capstone that handles provider/plan
 switching and wires the monitor into the live wave loop.
 
-- [ ] #30 — Usage meter model, governing-meter selection, and reader interface _(deps: #16, #4)_
-- [ ] #31 — Subscription usage reader: OAuth /api/oauth/usage poll with degradation chain _(deps: #30, #17)_
-- [ ] #32 — API-mode usage reader from response headers (built, inactive) _(deps: #30, #17)_
-- [ ] #33 — Threshold evaluation and date-sensitive Agent SDK credit meter handling _(deps: #30, #4)_
-- [ ] #34 — Hard pause and two-tier automatic resume (reset-known sleep + backoff probe) _(deps: #30, #3, #24, #17)_
-- [ ] #35 — Concurrency cap step-down as usage lever (3→2→1→pause) _(deps: #30, #25, #34)_
-- [ ] #36 — Override switch and peak-hour throttle policy modifiers _(deps: #33, #35)_
-- [ ] #37 — Provider/plan switch meter reload and wave-loop monitor integration _(deps: #29, #33, #34, #35, #36)_
+- [x] #30 — Usage meter model, governing-meter selection, and reader interface _(deps: #16, #4)_
+- [x] #31 — Subscription usage reader: OAuth /api/oauth/usage poll with degradation chain _(deps: #30, #17)_
+- [x] #32 — API-mode usage reader from response headers (built, inactive) _(deps: #30, #17)_
+- [x] #33 — Threshold evaluation and date-sensitive Agent SDK credit meter handling _(deps: #30, #4)_
+- [x] #34 — Hard pause and two-tier automatic resume (reset-known sleep + backoff probe) _(deps: #30, #3, #24, #17)_
+- [x] #35 — Concurrency cap step-down as usage lever (3→2→1→pause) _(deps: #30, #25, #34)_
+- [x] #36 — Override switch and peak-hour throttle policy modifiers _(deps: #33, #35)_
+- [x] #37 — Provider/plan switch meter reload and wave-loop monitor integration _(deps: #29, #33, #34, #35, #36)_
 
 **Workable now (Phase-1/2/3 deps permitting):** #30 first (needs #16, #4). After #30: #31, #32,
 #33, and #34 can run in parallel (each needs #30 plus their Phase-3 deps — #34 also needs #3/#24).
