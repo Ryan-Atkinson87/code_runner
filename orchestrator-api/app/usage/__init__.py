@@ -7,6 +7,7 @@ from app.usage.models import (
     applicable_meters,
     governing_meter,
 )
+from app.usage.monitor import MonitorCheckResult, MonitorState, UsageMonitor
 from app.usage.pause import (
     BackoffState,
     ResumeAction,
@@ -26,11 +27,14 @@ __all__ = [
     "FallbackLevel",
     "Meter",
     "MeterKind",
+    "MonitorCheckResult",
+    "MonitorState",
     "PolicyAction",
     "ResumeAction",
     "ResumeStrategy",
     "SubscriptionUsageReader",
     "ThresholdResult",
+    "UsageMonitor",
     "UsagePauseManager",
     "UsagePolicy",
     "UsagePolicyState",
