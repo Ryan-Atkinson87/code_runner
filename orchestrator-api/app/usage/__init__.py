@@ -1,4 +1,5 @@
 from app.usage.api_reader import ApiUsageReader
+from app.usage.cap_stepper import CapStepResult, apply_cap_step, cap_for_utilisation
 from app.usage.models import (
     Meter,
     MeterKind,
@@ -20,6 +21,7 @@ from app.usage.threshold import ThresholdResult, evaluate_threshold, human_reser
 __all__ = [
     "ApiUsageReader",
     "BackoffState",
+    "CapStepResult",
     "FallbackLevel",
     "Meter",
     "MeterKind",
@@ -30,7 +32,9 @@ __all__ = [
     "UsagePauseManager",
     "UsageReader",
     "UsageSnapshot",
+    "apply_cap_step",
     "applicable_meters",
+    "cap_for_utilisation",
     "evaluate_threshold",
     "governing_meter",
     "human_reserve_meter",
