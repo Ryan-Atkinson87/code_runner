@@ -106,24 +106,24 @@ class TestBuildUserContent:
 
 class TestNormaliseContent:
     def test_text_block(self) -> None:
-        events = _normalise_content([_make_text_block("output text")])
+        events = _normalise_content([_make_text_block("output text")])  # type: ignore[arg-type]
         assert len(events) == 1
         assert events[0].kind == EventKind.OUTPUT
         assert events[0].content == "output text"
 
     def test_thinking_block(self) -> None:
-        events = _normalise_content([_make_thinking_block("step 1...")])
+        events = _normalise_content([_make_thinking_block("step 1...")])  # type: ignore[arg-type]
         assert len(events) == 1
         assert events[0].kind == EventKind.REASONING
         assert events[0].content == "step 1..."
 
     def test_tool_use_block(self) -> None:
         block = _make_tool_use_block("bash", {"command": "ls"})
-        events = _normalise_content([block])
+        events = _normalise_content([block])  # type: ignore[arg-type]
         assert len(events) == 1
         assert events[0].kind == EventKind.TOOL_CALL
         assert events[0].tool_name == "bash"
-        assert json.loads(events[0].tool_input) == {"command": "ls"}
+        assert json.loads(events[0].tool_input or "") == {"command": "ls"}
 
     def test_mixed_blocks(self) -> None:
         blocks = [
@@ -131,22 +131,24 @@ class TestNormaliseContent:
             _make_text_block("answer"),
             _make_tool_use_block("bash", {"command": "test"}),
         ]
-        events = _normalise_content(blocks)
+        events = _normalise_content(blocks)  # type: ignore[arg-type]
         assert len(events) == 3
         assert events[0].kind == EventKind.REASONING
         assert events[1].kind == EventKind.OUTPUT
         assert events[2].kind == EventKind.TOOL_CALL
 
     def test_timestamps_set(self) -> None:
-        events = _normalise_content([_make_text_block()])
+        events = _normalise_content([_make_text_block()])  # type: ignore[arg-type]
         assert events[0].timestamp > 0
 
 
 class TestToolResultEvents:
     def test_single_result(self) -> None:
         blocks = [_make_tool_use_block("bash")]
-        results = [{"type": "tool_result", "tool_use_id": "toolu_123", "content": "done"}]
-        events = _tool_result_events(blocks, results)
+        results: list[dict[str, object]] = [
+            {"type": "tool_result", "tool_use_id": "toolu_123", "content": "done"},
+        ]
+        events = _tool_result_events(blocks, results)  # type: ignore[arg-type]
         assert len(events) == 1
         assert events[0].kind == EventKind.TOOL_RESULT
         assert events[0].tool_name == "bash"
@@ -157,11 +159,11 @@ class TestToolResultEvents:
             _make_tool_use_block("bash", block_id="t1"),
             _make_tool_use_block("str_replace_based_edit_tool", block_id="t2"),
         ]
-        results = [
+        results: list[dict[str, object]] = [
             {"type": "tool_result", "tool_use_id": "t1", "content": "output1"},
             {"type": "tool_result", "tool_use_id": "t2", "content": "output2"},
         ]
-        events = _tool_result_events(blocks, results)
+        events = _tool_result_events(blocks, results)  # type: ignore[arg-type]
         assert len(events) == 2
         assert events[0].tool_name == "bash"
         assert events[1].tool_name == "str_replace_based_edit_tool"
