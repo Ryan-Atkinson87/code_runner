@@ -167,13 +167,14 @@ Listed in dependency order. Three workstreams: **Notion tracker sync** (#38→#3
 three independent foundations.
 
 - [x] #38 — Notion API client: scoped, auto-discover databases, 429 backoff _(deps: #4, #5)_
-- [ ] #39 — Idempotent GitHub→Notion mirror sync (make target match source) _(deps: #38, #26)_
-- [ ] #40 — Social Media Context page update at wave hand-off _(deps: #38, #14)_
+- [x] #39 — Idempotent GitHub→Notion mirror sync (make target match source) _(deps: #38, #26)_
+- [x] #40 — Social Media Context page update at wave hand-off _(deps: #38, #14)_
 - [x] #41 — Notification service: channel abstraction, dispatcher, config toggles _(deps: #4)_
-- [ ] #42 — Telegram and Resend outbound notification channels _(deps: #41, #5)_
+- [x] #42 — Telegram and Resend outbound notification channels _(deps: #41, #5)_
 - [x] #43 — Blocker model and SQLite store: structured record, park/list/resolve _(deps: #3)_
-- [ ] #44 — Blocker escalation engine: park-and-continue, immediate notify, PR surfacing _(deps: #43, #42, #14, #27)_
+- [x] #44 — Blocker escalation engine: park-and-continue, immediate notify, PR surfacing _(deps: #43, #42, #14, #27)_
 - [ ] #45 — Telegram two-way control: inbound command listener and engine dispatch _(deps: #42, #43, #29, #34, #36)_
+- [x] #135 — Wire SocialContextUpdater into wave_driver hand-off sequence _(deps: #40)_
 
 **Workable now (Phase-1/2/3 deps permitting):** #38 (needs #4, #5), #41 (needs #4), and #43
 (needs #3) are the three independent starts. Then #39 (needs #38 + issue reader #26) and #40
