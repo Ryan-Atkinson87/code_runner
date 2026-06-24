@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -27,7 +28,10 @@ from app.providers.hooks import CODING_TOOLS
 from app.renderer.base import RenderedOutput
 from app.renderer.pipeline import compose_and_render
 from app.skills.models import Skill
+from app.sync.social_context import SocialContextUpdater
 from app.wave.assembly import WaveAssemblyResult
+
+logger = logging.getLogger(__name__)
 
 
 class WaveError(Exception):
@@ -63,6 +67,7 @@ async def run_wave(
     wave_name: str,
     run_id: int,
     cap: int | None = None,
+    social_context_updater: SocialContextUpdater | None = None,
 ) -> WaveResult:
     """Drive the full wave loop (Spec §4.2).
 
@@ -228,6 +233,15 @@ async def run_wave(
             prs.append(pr)
         except Exception:
             pass
+
+    if social_context_updater is not None:
+        result = social_context_updater.update(wave_name)
+        if not result.success:
+            logger.warning(
+                "Social Context update failed for wave %s: %s",
+                wave_name,
+                result.error,
+            )
 
     return WaveResult(
         issue_outcomes=all_outcomes,
