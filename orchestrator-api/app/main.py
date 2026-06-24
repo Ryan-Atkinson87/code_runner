@@ -1,14 +1,25 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from fastapi import FastAPI
 
 from app.auth.dependencies import init_session_store
 from app.auth.router import router as auth_router
 from app.auth.sessions import SessionStore
 from app.routers import health
+from app.routers.blockers import init_blockers_deps
+from app.routers.blockers import router as blockers_router
 from app.routers.usage import init_usage_deps
 from app.routers.usage import router as usage_router
 from app.settings import Settings
 from app.usage.monitor import UsageMonitor
 from app.usage.policy import UsagePolicy
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from app.blockers.store import BlockerStore
 
 
 def create_app(
@@ -16,6 +27,8 @@ def create_app(
     session_store: SessionStore | None = None,
     usage_monitor: UsageMonitor | None = None,
     usage_policy: UsagePolicy | None = None,
+    blocker_store: BlockerStore | None = None,
+    active_run_id_fn: Callable[[], int | None] | None = None,
 ) -> FastAPI:
     if settings is None:
         settings = Settings()
@@ -26,6 +39,9 @@ def create_app(
     if usage_monitor is not None and usage_policy is not None:
         init_usage_deps(usage_monitor, usage_policy)
 
+    if blocker_store is not None and active_run_id_fn is not None:
+        init_blockers_deps(blocker_store, active_run_id_fn)
+
     application = FastAPI(
         title=settings.app_name,
         root_path=settings.root_path,
@@ -34,5 +50,6 @@ def create_app(
     application.include_router(health.router)
     application.include_router(auth_router)
     application.include_router(usage_router)
+    application.include_router(blockers_router)
 
     return application
