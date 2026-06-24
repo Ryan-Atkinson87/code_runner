@@ -3,6 +3,8 @@ from __future__ import annotations
 from app.config.schema import NotificationsSection
 from app.notifications.channel import Channel
 from app.notifications.dispatcher import Dispatcher
+from app.notifications.resend import ResendChannel
+from app.notifications.telegram import TelegramChannel
 
 
 class ChannelRegistry:
@@ -20,6 +22,8 @@ class ChannelRegistry:
 
 
 _registry = ChannelRegistry()
+_registry.register("telegram", TelegramChannel)  # type: ignore[arg-type]
+_registry.register("email", ResendChannel)  # type: ignore[arg-type]
 
 
 def get_registry() -> ChannelRegistry:
