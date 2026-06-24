@@ -4,7 +4,10 @@ import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from app.blockers.models import BlockerType
+from app.blockers.store import BlockerStore
 from app.config.schema import ProjectConfig
+from app.engine.escalation import EscalationResult, blocker_type_for_outcome, escalate
 from app.engine.implement_loop import (
     BlockerRecord,
     ImplementOutcome,
@@ -20,6 +23,7 @@ from app.git.repo import GitRepo
 from app.github.models import PullRequest
 from app.handoff.engine import HandoffEngine
 from app.handoff.models import HandoffInput, IssueNote, ParkedBlocker
+from app.notifications.dispatcher import Dispatcher
 from app.personas.models import Overlay, PersonaType
 from app.profile.schema import ExecutionProfile
 from app.providers.adapter import ProviderAdapter
@@ -46,6 +50,7 @@ class WaveResult:
     issue_outcomes: list[IssueOutcome] = field(default_factory=list)
     prs: list[PullRequest] = field(default_factory=list)
     parked_blockers: list[BlockerRecord] = field(default_factory=list)
+    escalation_results: list[EscalationResult] = field(default_factory=list)
 
 
 async def run_wave(
@@ -63,6 +68,8 @@ async def run_wave(
     wave_name: str,
     run_id: int,
     cap: int | None = None,
+    blocker_store: BlockerStore | None = None,
+    dispatcher: Dispatcher | None = None,
 ) -> WaveResult:
     """Drive the full wave loop (Spec §4.2).
 
@@ -76,6 +83,8 @@ async def run_wave(
     marker_store = IssueMarker(db_conn)
     merge_queue = MergeQueue()
     scheduler = WaveScheduler(cap=cap)
+    _blocker_store = blocker_store or BlockerStore(db_conn)
+    escalation_results: list[EscalationResult] = []
 
     repos: dict[str, GitRepo] = {}
     agent_branches: dict[str, AgentBranch] = {}
@@ -151,6 +160,15 @@ async def run_wave(
                 reason=f"Implementation failed: {impl_result.outcome}",
             )
             parked.append(blocker)
+            esc = escalate(
+                blocker_record=blocker,
+                run_id=run_id,
+                wave_name=wave_name,
+                blocker_store=_blocker_store,
+                dispatcher=dispatcher,
+                blocker_type=blocker_type_for_outcome(impl_result.outcome.value),
+            )
+            escalation_results.append(esc)
             fb.discard()
             return IssueOutcome(
                 issue_number=task.issue_number,
@@ -180,6 +198,15 @@ async def run_wave(
                 reason=review_result.blocker_reason or "Review not approved",
             )
             parked.append(blocker)
+            esc = escalate(
+                blocker_record=blocker,
+                run_id=run_id,
+                wave_name=wave_name,
+                blocker_store=_blocker_store,
+                dispatcher=dispatcher,
+                blocker_type=BlockerType.OTHER,
+            )
+            escalation_results.append(esc)
             return IssueOutcome(
                 issue_number=task.issue_number,
                 completed=False,
@@ -233,6 +260,7 @@ async def run_wave(
         issue_outcomes=all_outcomes,
         prs=prs,
         parked_blockers=parked,
+        escalation_results=escalation_results,
     )
 
 
