@@ -33,8 +33,8 @@ progress and has two parts:
 | 2 | Git/PR engine | ✅ | 1 |
 | 3 | Claude adapter + wave loop | ✅ | 1, 2 |
 | 4 | Usage monitor | ✅ | 3 |
-| 5 | Trackers + notifications | 🔄 | 3 |
-| 6 | Observability + UI | ⬜ | 3, 4, 5 |
+| 5 | Trackers + notifications | ✅ | 3 |
+| 6 | Observability + UI | 🔄 | 3, 4, 5 |
 | 7 | Multi-provider | 🔄 | 3 |
 
 ---
@@ -157,7 +157,7 @@ merging first.
 
 GitHub<->Notion sync; Telegram two-way + Resend; blocker escalation.
 
-**Status:** 🔄 (planned — issues created)
+**Status:** ✅ (complete — milestone closed 2026-06-24)
 
 ### Issues
 
@@ -173,7 +173,7 @@ three independent foundations.
 - [x] #42 — Telegram and Resend outbound notification channels _(deps: #41, #5)_
 - [x] #43 — Blocker model and SQLite store: structured record, park/list/resolve _(deps: #3)_
 - [x] #44 — Blocker escalation engine: park-and-continue, immediate notify, PR surfacing _(deps: #43, #42, #14, #27)_
-- [ ] #45 — Telegram two-way control: inbound command listener and engine dispatch _(deps: #42, #43, #29, #34, #36)_
+- [x] #45 — Telegram two-way control: inbound command listener and engine dispatch _(deps: #42, #43, #29, #34, #36)_
 - [x] #135 — Wire SocialContextUpdater into wave_driver hand-off sequence _(deps: #40)_
 
 **Workable now (Phase-1/2/3 deps permitting):** #38 (needs #4, #5), #41 (needs #4), and #43

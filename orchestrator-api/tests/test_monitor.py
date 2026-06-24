@@ -60,7 +60,7 @@ class TestUsageMonitor:
         reader = FakeReader(utilisation=30.0)
         monitor = UsageMonitor(
             reader=reader,
-            policy=UsagePolicy(),
+            policy=UsagePolicy(peak_hour_throttle_enabled=False),
             scheduler=WaveScheduler(cap=3),
         )
         result = await monitor.check()
@@ -201,7 +201,7 @@ class TestEndToEndSimulation:
         reader = FakeReader(utilisation=30.0)
         scheduler = WaveScheduler(cap=3)
         pause_mgr = UsagePauseManager(store.conn)
-        policy = UsagePolicy()
+        policy = UsagePolicy(peak_hour_throttle_enabled=False)
         monitor = UsageMonitor(
             reader=reader,
             policy=policy,
