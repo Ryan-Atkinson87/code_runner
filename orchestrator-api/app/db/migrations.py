@@ -95,9 +95,20 @@ class V004_Blockers:
         """)
 
 
+class V005_BlockerResolutionResponse:
+    version = 5
+    description = "Store human response text when resolving a blocker"
+
+    def apply(self, conn: sqlite3.Connection) -> None:
+        conn.execute(
+            "ALTER TABLE blockers ADD COLUMN resolution_response TEXT"
+        )
+
+
 ALL_MIGRATIONS: list[type[Migration]] = [  # type: ignore[type-abstract]
     V001_Baseline,
     V002_IssueMarkers,
     V003_UsagePauses,
     V004_Blockers,
+    V005_BlockerResolutionResponse,
 ]

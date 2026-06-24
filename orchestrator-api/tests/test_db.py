@@ -32,7 +32,7 @@ def test_wal_mode_enabled(store: StateStore) -> None:
 
 
 def test_schema_version_recorded(store: StateStore) -> None:
-    assert store.current_version() == 4
+    assert store.current_version() == 5
 
 
 def test_run_write_read_roundtrip(store: StateStore) -> None:
@@ -83,12 +83,12 @@ def test_migrations_are_idempotent(tmp_path: Path) -> None:
     db_path = tmp_path / "idem.db"
     s1 = StateStore(db_path)
     s1.open()
-    assert s1.current_version() == 4
+    assert s1.current_version() == 5
     s1.close()
 
     s2 = StateStore(db_path)
     s2.open()
-    assert s2.current_version() == 4
+    assert s2.current_version() == 5
     s2.close()
 
 

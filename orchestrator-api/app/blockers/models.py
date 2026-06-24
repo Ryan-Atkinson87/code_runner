@@ -28,3 +28,4 @@ class Blocker(BaseModel):
     status: BlockerStatus = BlockerStatus.PARKED
     created_at: str = ""
     resolved_at: str | None = None
+    resolution_response: str | None = None

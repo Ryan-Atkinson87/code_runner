@@ -49,7 +49,9 @@ class BlockerStore:
         ).fetchall()
         return [self._row_to_blocker(row) for row in rows]
 
-    def resolve(self, run_id: int, issue_number: int) -> Blocker:
+    def resolve(
+        self, run_id: int, issue_number: int, resolution_response: str | None = None
+    ) -> Blocker:
         existing = self._find_parked(run_id, issue_number)
         if existing is None:
             raise BlockerStoreError(
@@ -58,10 +60,10 @@ class BlockerStore:
         self._conn.execute(
             """
             UPDATE blockers
-            SET status = ?, resolved_at = datetime('now')
+            SET status = ?, resolved_at = datetime('now'), resolution_response = ?
             WHERE id = ?
             """,
-            (BlockerStatus.RESOLVED.value, existing.id),
+            (BlockerStatus.RESOLVED.value, resolution_response, existing.id),
         )
         self._conn.commit()
         return self._get_by_id(existing.id)  # type: ignore[arg-type]
@@ -95,4 +97,5 @@ class BlockerStore:
             status=BlockerStatus(row["status"]),
             created_at=row["created_at"],
             resolved_at=row["resolved_at"],
+            resolution_response=row["resolution_response"],
         )
