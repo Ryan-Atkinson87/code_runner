@@ -123,6 +123,16 @@ class TestBlockerResolve:
         assert resolved.status == BlockerStatus.RESOLVED
         assert resolved.resolved_at is not None
 
+    def test_resolve_stores_response_text(self, blocker_store: BlockerStore) -> None:
+        blocker_store.record(_make_blocker())
+        resolved = blocker_store.resolve(1, 42, resolution_response="The answer is X")
+        assert resolved.resolution_response == "The answer is X"
+
+    def test_resolve_without_response_leaves_null(self, blocker_store: BlockerStore) -> None:
+        blocker_store.record(_make_blocker())
+        resolved = blocker_store.resolve(1, 42)
+        assert resolved.resolution_response is None
+
     def test_resolve_nonexistent_raises(self, blocker_store: BlockerStore) -> None:
         with pytest.raises(BlockerStoreError, match="No parked blocker"):
             blocker_store.resolve(1, 99)

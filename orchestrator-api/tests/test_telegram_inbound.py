@@ -230,6 +230,9 @@ class TestCommandBlockerResponse:
         assert "resolved" in result.reply
         assert "The answer is X" in result.reply
         assert blocker_store.list_parked(1) == []
+        resolved = blocker_store.list_all(1)
+        assert len(resolved) == 1
+        assert resolved[0].resolution_response == "The answer is X"
 
     def test_resolve_no_matching_blocker(self, router: CommandRouter) -> None:
         result = router.handle("resolve #99 Some text", run_id=1)

@@ -5,7 +5,7 @@ import sqlite3
 from dataclasses import dataclass
 from enum import StrEnum
 
-from app.blockers.store import BlockerStore
+from app.blockers.store import BlockerStore, BlockerStoreError
 from app.usage.pause import UsagePauseManager
 from app.usage.policy import UsagePolicy
 
@@ -190,16 +190,17 @@ class CommandRouter:
             )
         response_text = parts[2]
 
-        parked = self._blockers.list_parked(run_id)
-        matching = [b for b in parked if b.issue_number == issue_number]
-        if not matching:
+        try:
+            self._blockers.resolve(
+                run_id, issue_number, resolution_response=response_text
+            )
+        except BlockerStoreError:
             return CommandResult(
                 command=CommandKind.BLOCKER_RESPONSE,
                 reply=f"No parked blocker for issue #{issue_number} in run #{run_id}.",
                 success=False,
             )
 
-        self._blockers.resolve(run_id, issue_number)
         return CommandResult(
             command=CommandKind.BLOCKER_RESPONSE,
             reply=(
