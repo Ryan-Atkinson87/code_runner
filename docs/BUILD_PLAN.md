@@ -205,7 +205,7 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [ ] #48 — Efficiency rollups in SQLite: per issue/role/skill/wave/month aggregation _(deps: #46, #3)_
 - [ ] #49 — Storage cap and tiered retention pruning (~50GB; raw 90d / traces 180d / rollups indefinite) _(deps: #46, #47)_
 - [ ] #50 — Efficiency report generator: on-demand/per-wave/per-month + regression + suggestions _(deps: #48, #47)_
-- [ ] #51 — Run-control API: project/wave/provider selection + start/stop/pause/resume _(deps: #29, #2, #6)_
+- [x] #51 — Run-control API: project/wave/provider selection + start/stop/pause/resume _(deps: #29, #2, #6)_
 - [ ] #52 — Live-progress SSE endpoint: normalised event stream _(deps: #46, #16, #6)_
 - [x] #53 — Usage-gauges API: meters, governing meter, 80% line, override switch _(deps: #33, #36, #2)_
 - [x] #54 — Blockers API: list parked blockers and respond inline _(deps: #43, #44, #2)_
