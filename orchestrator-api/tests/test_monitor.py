@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -36,10 +37,10 @@ class FailingReader(UsageReader):
 
 
 @pytest.fixture()
-def store(tmp_path: Path) -> StateStore:
+def store(tmp_path: Path) -> Iterator[StateStore]:
     s = StateStore(tmp_path / "test.db")
     s.open()
-    yield s  # type: ignore[misc]
+    yield s
     s.close()
 
 
