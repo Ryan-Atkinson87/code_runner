@@ -207,6 +207,29 @@ class TestPushBranch:
                 client.push_branch(tmp_path, "feature-branch")
 
 
+class TestDeleteRemoteBranch:
+    def test_refuses_protected_branch(self, client: GitHubClient) -> None:
+        for branch in ("main", "master", "dev", "develop"):
+            with pytest.raises(BranchProtectionError, match="protected branch"):
+                client.delete_remote_branch(Path("/fake"), branch)
+
+    def test_success(self, client: GitHubClient, tmp_path: Path) -> None:
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout="", stderr=""
+            )
+            client.delete_remote_branch(tmp_path, "feature-branch")
+            mock_run.assert_called_once()
+
+    def test_failure_raises_github_error(self, client: GitHubClient, tmp_path: Path) -> None:
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=1, stdout="", stderr="remote: branch not found"
+            )
+            with pytest.raises(GitHubError, match="Delete remote branch failed"):
+                client.delete_remote_branch(tmp_path, "feature-branch")
+
+
 class TestContextManager:
     def test_close(self) -> None:
         client = GitHubClient(token="test", owner="owner")
