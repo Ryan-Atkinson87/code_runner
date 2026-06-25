@@ -115,6 +115,49 @@ class V006_RunProvider:
         )
 
 
+class V007_EfficiencyRollups:
+    version = 7
+    description = "Efficiency rollups: per-dimension aggregates + idempotency tracker"
+
+    def apply(self, conn: sqlite3.Connection) -> None:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS session_rollups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                wave TEXT NOT NULL,
+                issue_number INTEGER NOT NULL,
+                role TEXT NOT NULL,
+                skill TEXT NOT NULL,
+                model TEXT NOT NULL,
+                month TEXT NOT NULL,
+                session_count INTEGER NOT NULL DEFAULT 0,
+                tokens_in INTEGER NOT NULL DEFAULT 0,
+                tokens_out INTEGER NOT NULL DEFAULT 0,
+                cost_usd REAL NOT NULL DEFAULT 0.0,
+                duration_seconds REAL NOT NULL DEFAULT 0.0,
+                retry_count INTEGER NOT NULL DEFAULT 0,
+                completed_count INTEGER NOT NULL DEFAULT 0,
+                blocked_count INTEGER NOT NULL DEFAULT 0,
+                error_count INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                UNIQUE (wave, issue_number, role, skill, model, month)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_rollups_issue
+                ON session_rollups (issue_number);
+
+            CREATE INDEX IF NOT EXISTS idx_rollups_wave
+                ON session_rollups (wave);
+
+            CREATE INDEX IF NOT EXISTS idx_rollups_month
+                ON session_rollups (month);
+
+            CREATE TABLE IF NOT EXISTS aggregated_sessions (
+                session_id TEXT PRIMARY KEY,
+                aggregated_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+        """)
+
+
 ALL_MIGRATIONS: list[type[Migration]] = [  # type: ignore[type-abstract]
     V001_Baseline,
     V002_IssueMarkers,
@@ -122,4 +165,5 @@ ALL_MIGRATIONS: list[type[Migration]] = [  # type: ignore[type-abstract]
     V004_Blockers,
     V005_BlockerResolutionResponse,
     V006_RunProvider,
+    V007_EfficiencyRollups,
 ]
