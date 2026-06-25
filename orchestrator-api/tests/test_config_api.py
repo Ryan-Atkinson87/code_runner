@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from argon2 import PasswordHasher
 from fastapi.testclient import TestClient
@@ -7,6 +9,7 @@ from fastapi.testclient import TestClient
 from app.auth import router as auth_router_mod
 from app.auth.rate_limit import RateLimiter
 from app.auth.sessions import SessionStore
+from app.config.loader import load_project_config
 from app.config.schema import (
     GitHubIntegration,
     IntegrationsSection,
@@ -33,9 +36,15 @@ def _make_config() -> ProjectConfig:
     )
 
 
+def _write_config_yaml(path: Path, config: ProjectConfig) -> None:
+    from app.config.loader import save_project_config
+    save_project_config(config, path)
+
+
 def _make_client(
     monkeypatch: pytest.MonkeyPatch,
     config: ProjectConfig | None = None,
+    config_path: Path | None = None,
     authed: bool = True,
 ) -> TestClient:
     monkeypatch.setattr(auth_router_mod, "_login_limiter", RateLimiter())
@@ -46,6 +55,7 @@ def _make_client(
         Settings(),
         session_store=SessionStore(),
         project_config=config or _make_config(),
+        config_path=config_path or "",
     )
     client = TestClient(app, base_url="https://testserver")
 
@@ -207,3 +217,54 @@ class TestNotificationToggle:
         client.put("/config/notifications", json={"email": True})
         resp = client.get("/config")
         assert resp.json()["notifications"]["email"] is True
+
+
+class TestDiskPersistence:
+    def test_provider_edit_survives_reload(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        config = _make_config()
+        config_file = tmp_path / "project.yaml"
+        _write_config_yaml(config_file, config)
+
+        client = _make_client(monkeypatch, config=config, config_path=config_file)
+        resp = client.put("/config/provider", json={"default": "codex"})
+        assert resp.status_code == 200
+
+        reloaded = load_project_config(config_file)
+        assert reloaded.provider.default == "codex"
+
+    def test_egress_edit_survives_reload(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        config = _make_config()
+        config_file = tmp_path / "project.yaml"
+        _write_config_yaml(config_file, config)
+
+        client = _make_client(monkeypatch, config=config, config_path=config_file)
+        resp = client.put("/config/egress", json={"allow": ["api.github.com"]})
+        assert resp.status_code == 200
+
+        reloaded = load_project_config(config_file)
+        assert reloaded.egress.allow == ["api.github.com"]
+
+    def test_notifications_edit_survives_reload(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        config = _make_config()
+        config_file = tmp_path / "project.yaml"
+        _write_config_yaml(config_file, config)
+
+        client = _make_client(monkeypatch, config=config, config_path=config_file)
+        resp = client.put("/config/notifications", json={"email": True})
+        assert resp.status_code == 200
+
+        reloaded = load_project_config(config_file)
+        assert reloaded.notifications.email is True
+
+    def test_no_path_does_not_crash(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        client = _make_client(monkeypatch)
+        resp = client.put("/config/provider", json={"default": "codex"})
+        assert resp.status_code == 200

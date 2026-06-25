@@ -46,6 +46,7 @@ def create_app(
     github_client: GitHubClient | None = None,
     repo_name: str = "",
     project_config: ProjectConfig | None = None,
+    config_path: str | Path = "",
     profile_generate_fn: Callable[..., Awaitable[ProfileGenerationResult]] | None = None,
     profile_output_path: Path | None = None,
 ) -> FastAPI:
@@ -68,7 +69,7 @@ def create_app(
         init_prs_deps(github_client, repo_name)
 
     if project_config is not None:
-        init_config_deps(project_config)
+        init_config_deps(project_config, str(config_path))
 
     if profile_generate_fn is not None:
         init_profile_deps(
