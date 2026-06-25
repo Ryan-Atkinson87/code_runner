@@ -11,6 +11,14 @@ from app.config.schema import RepoCommands
 GATE_NAMES = ("test", "lint", "typecheck")
 
 
+def _decode_partial(raw: bytes | str | None) -> str:
+    if raw is None:
+        return ""
+    if isinstance(raw, bytes):
+        return raw.decode(errors="replace")
+    return raw
+
+
 class GateStatus(Enum):
     PASSED = "passed"
     FAILED = "failed"
@@ -78,14 +86,14 @@ def _run_single_gate(
             stderr=result.stderr,
             duration_seconds=elapsed,
         )
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
         elapsed = time.monotonic() - start
         return GateResult(
             name=name,
             status=GateStatus.TIMED_OUT,
             exit_code=None,
-            stdout="",
-            stderr=f"Command timed out after {timeout_seconds}s",
+            stdout=_decode_partial(exc.stdout),
+            stderr=_decode_partial(exc.stderr) or f"Command timed out after {timeout_seconds}s",
             duration_seconds=elapsed,
         )
 
