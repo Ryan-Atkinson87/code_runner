@@ -10,6 +10,7 @@ import anthropic
 from app.git.repo import GitRepo
 from app.providers.adapter import ProviderAdapter
 from app.providers.hooks import ToolPermissionError, create_audit_record, pre_tool_use_check
+from app.providers.pricing import calculate_cost
 from app.providers.types import (
     AuditRecord,
     EventKind,
@@ -96,7 +97,7 @@ class ClaudeAdapter(ProviderAdapter):
             usage=UsageReport(
                 tokens_in=tokens_in,
                 tokens_out=tokens_out,
-                cost_usd=0.0,
+                cost_usd=calculate_cost(model, tokens_in, tokens_out),
                 model=model,
                 duration_seconds=time.monotonic() - start,
             ),
