@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 import pytest
@@ -60,7 +61,7 @@ def _make_error_result() -> ProfileGenerationResult:
 
 def _make_client(
     monkeypatch: pytest.MonkeyPatch,
-    generate_fn: object,
+    generate_fn: Callable[..., Awaitable[ProfileGenerationResult]],
     output_path: Path,
     authed: bool = True,
 ) -> TestClient:
@@ -87,14 +88,18 @@ class TestAuthGuard:
     def test_propose_rejected_unauthenticated(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        gen = lambda: _make_success_result()  # noqa: E731
+        async def gen() -> ProfileGenerationResult:
+            return _make_success_result()
+
         client = _make_client(monkeypatch, gen, tmp_path / "out.yaml", authed=False)
         assert client.post("/profile/propose").status_code == 401
 
     def test_confirm_rejected_unauthenticated(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        gen = lambda: _make_success_result()  # noqa: E731
+        async def gen() -> ProfileGenerationResult:
+            return _make_success_result()
+
         client = _make_client(monkeypatch, gen, tmp_path / "out.yaml", authed=False)
         assert client.post("/profile/confirm").status_code == 401
 

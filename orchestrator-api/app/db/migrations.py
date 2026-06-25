@@ -105,10 +105,21 @@ class V005_BlockerResolutionResponse:
         )
 
 
+class V006_RunProvider:
+    version = 6
+    description = "Persist provider choice on each run"
+
+    def apply(self, conn: sqlite3.Connection) -> None:
+        conn.execute(
+            "ALTER TABLE runs ADD COLUMN provider TEXT NOT NULL DEFAULT 'claude'"
+        )
+
+
 ALL_MIGRATIONS: list[type[Migration]] = [  # type: ignore[type-abstract]
     V001_Baseline,
     V002_IssueMarkers,
     V003_UsagePauses,
     V004_Blockers,
     V005_BlockerResolutionResponse,
+    V006_RunProvider,
 ]
