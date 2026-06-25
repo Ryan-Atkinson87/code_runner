@@ -7,9 +7,12 @@ from fastapi import FastAPI
 from app.auth.dependencies import init_session_store
 from app.auth.router import router as auth_router
 from app.auth.sessions import SessionStore
+from app.github.client import GitHubClient
 from app.routers import health
 from app.routers.blockers import init_blockers_deps
 from app.routers.blockers import router as blockers_router
+from app.routers.prs import init_prs_deps
+from app.routers.prs import router as prs_router
 from app.routers.usage import init_usage_deps
 from app.routers.usage import router as usage_router
 from app.settings import Settings
@@ -29,6 +32,8 @@ def create_app(
     usage_policy: UsagePolicy | None = None,
     blocker_store: BlockerStore | None = None,
     active_run_id_fn: Callable[[], int | None] | None = None,
+    github_client: GitHubClient | None = None,
+    repo_name: str = "",
 ) -> FastAPI:
     if settings is None:
         settings = Settings()
@@ -42,6 +47,9 @@ def create_app(
     if blocker_store is not None and active_run_id_fn is not None:
         init_blockers_deps(blocker_store, active_run_id_fn)
 
+    if github_client is not None and repo_name:
+        init_prs_deps(github_client, repo_name)
+
     application = FastAPI(
         title=settings.app_name,
         root_path=settings.root_path,
@@ -51,5 +59,6 @@ def create_app(
     application.include_router(auth_router)
     application.include_router(usage_router)
     application.include_router(blockers_router)
+    application.include_router(prs_router)
 
     return application
