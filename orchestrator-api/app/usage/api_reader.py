@@ -97,7 +97,7 @@ def _build_meters(parsed: dict[str, float]) -> list[Meter]:
         utilisation = (used / requests_limit) * 100.0
         meters.append(
             Meter(
-                kind="api_requests",
+                kind=MeterKind.API_REQUESTS,
                 utilisation=min(utilisation, 100.0),
                 limit=requests_limit,
                 used=used,
