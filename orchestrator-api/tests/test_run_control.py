@@ -116,7 +116,7 @@ class TestListWaves:
         assert len(data["waves"]) == 3
         assert data["waves"][2]["name"] == "Observability + UI"
         assert data["waves"][2]["state"] == "open"
-        mock_github.list_milestones.assert_called_once_with("test-repo")
+        mock_github.list_milestones.assert_called_once_with("test-repo", state="all")
 
 
 class TestStartRun:
@@ -304,7 +304,7 @@ class TestRunController:
         waves = controller.list_waves()
         assert len(waves) == 3
         assert waves[0]["name"] == "Foundations"
-        mock_github.list_milestones.assert_called_once()
+        mock_github.list_milestones.assert_called_once_with("test-repo", state="all")
 
     def test_list_waves_no_github(self, db_conn: sqlite3.Connection) -> None:
         ctrl = RunController(conn=db_conn)

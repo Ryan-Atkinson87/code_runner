@@ -172,7 +172,7 @@ class RunController:
     def list_waves(self) -> list[dict[str, Any]]:
         if self._github_client is None or not self._repo_name:
             return []
-        milestones = self._github_client.list_milestones(self._repo_name)
+        milestones = self._github_client.list_milestones(self._repo_name, state="all")
         return [
             {
                 "name": m.title,
