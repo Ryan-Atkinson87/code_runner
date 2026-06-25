@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 import pytest
 
 from app.blockers.models import Blocker, BlockerStatus, BlockerType
@@ -8,7 +10,7 @@ from app.db.store import StateStore
 
 
 @pytest.fixture()
-def store(tmp_path: object) -> StateStore:
+def store(tmp_path: object) -> Iterator[StateStore]:
     from pathlib import Path
 
     db_path = Path(str(tmp_path)) / "test.db"
@@ -19,7 +21,7 @@ def store(tmp_path: object) -> StateStore:
         ("test-project", "Phase 5", "running"),
     )
     s.conn.commit()
-    yield s  # type: ignore[misc]
+    yield s
     s.close()
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -19,7 +20,7 @@ from app.notifications.dispatcher import ChannelResult, Dispatcher, DispatchResu
 
 
 @pytest.fixture()
-def state_store(tmp_path: Path) -> StateStore:
+def state_store(tmp_path: Path) -> Iterator[StateStore]:
     db_path = tmp_path / "test.db"
     s = StateStore(db_path)
     s.open()
@@ -28,7 +29,7 @@ def state_store(tmp_path: Path) -> StateStore:
         ("test-project", "Phase 5", "running"),
     )
     s.conn.commit()
-    yield s  # type: ignore[misc]
+    yield s
     s.close()
 
 
@@ -44,7 +45,7 @@ def _make_blocker_record(
     return BlockerRecord(issue_number=issue_number, reason=reason)
 
 
-def _mock_dispatcher(success: bool = True) -> Dispatcher:
+def _mock_dispatcher(success: bool = True) -> MagicMock:
     mock = MagicMock(spec=Dispatcher)
     mock.send.return_value = DispatchResult(
         results=[ChannelResult(channel_name="telegram", success=success)]

@@ -41,8 +41,7 @@ ignore = []
 [tool.pyright]
 pythonVersion = "3.13"
 typeCheckingMode = "standard"
-include = ["app"]
-exclude = ["tests"]
+include = ["app", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

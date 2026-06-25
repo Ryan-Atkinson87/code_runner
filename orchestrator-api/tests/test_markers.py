@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -17,10 +18,10 @@ from app.git.repo import GitRepo
 
 
 @pytest.fixture()
-def store(tmp_path: Path) -> StateStore:
+def store(tmp_path: Path) -> Iterator[StateStore]:
     s = StateStore(tmp_path / "test.db")
     s.open()
-    yield s  # type: ignore[misc]
+    yield s
     s.close()
 
 
