@@ -223,6 +223,8 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [ ] #66 — Efficiency-reports screen: on-demand/per-wave/per-month views _(deps: #60, #56)_
 - [ ] #67 — Settings screen: config view read/edit + notifications toggle _(deps: #60, #57)_
 - [ ] #68 — Profile-generation screen: trigger session, review proposed profile, confirm before write _(deps: #60, #58)_
+- [x] #121 — Enable pyright type-checking on test files _(chore)_
+- [x] #123 — Replace lstrip with removeprefix in is_merged _(chore)_
 
 **Workable now (Phase-1/2/3/4/5 deps permitting):** #46 first (needs #16, #3). After #46: #47,
 #48 (parallel); then #49 (needs #46, #47) and #50 (needs #48, #47). The API issues unblock as
