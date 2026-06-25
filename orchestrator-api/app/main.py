@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
@@ -14,6 +15,8 @@ from app.routers.blockers import init_blockers_deps
 from app.routers.blockers import router as blockers_router
 from app.routers.config import init_config_deps
 from app.routers.config import router as config_router
+from app.routers.profile import init_profile_deps
+from app.routers.profile import router as profile_router
 from app.routers.prs import init_prs_deps
 from app.routers.prs import router as prs_router
 from app.routers.usage import init_usage_deps
@@ -23,9 +26,10 @@ from app.usage.monitor import UsageMonitor
 from app.usage.policy import UsagePolicy
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Awaitable, Callable
 
     from app.blockers.store import BlockerStore
+    from app.engine.profile_generation import ProfileGenerationResult
 
 
 def create_app(
@@ -38,6 +42,8 @@ def create_app(
     github_client: GitHubClient | None = None,
     repo_name: str = "",
     project_config: ProjectConfig | None = None,
+    profile_generate_fn: Callable[..., Awaitable[ProfileGenerationResult]] | None = None,
+    profile_output_path: Path | None = None,
 ) -> FastAPI:
     if settings is None:
         settings = Settings()
@@ -57,6 +63,12 @@ def create_app(
     if project_config is not None:
         init_config_deps(project_config)
 
+    if profile_generate_fn is not None:
+        init_profile_deps(
+            profile_generate_fn,
+            profile_output_path or Path("execution-profile.yaml"),
+        )
+
     application = FastAPI(
         title=settings.app_name,
         root_path=settings.root_path,
@@ -68,5 +80,6 @@ def create_app(
     application.include_router(blockers_router)
     application.include_router(prs_router)
     application.include_router(config_router)
+    application.include_router(profile_router)
 
     return application
