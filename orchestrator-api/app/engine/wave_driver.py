@@ -32,7 +32,7 @@ from app.providers.hooks import CODING_TOOLS
 from app.renderer.base import RenderedOutput
 from app.renderer.pipeline import compose_and_render
 from app.skills.models import Skill
-from app.sync.social_context import SocialContextUpdater
+from app.sync.social_context import SocialContextError, SocialContextUpdater
 from app.wave.assembly import WaveAssemblyResult
 
 logger = logging.getLogger(__name__)
@@ -262,12 +262,19 @@ async def run_wave(
             pass
 
     if social_context_updater is not None:
-        result = social_context_updater.update(wave_name)
-        if not result.success:
+        try:
+            result = social_context_updater.update(wave_name)
+            if not result.success:
+                logger.warning(
+                    "Social Context update failed for wave %s: %s",
+                    wave_name,
+                    result.error,
+                )
+        except SocialContextError as exc:
             logger.warning(
-                "Social Context update failed for wave %s: %s",
+                "Social Context update raised for wave %s: %s",
                 wave_name,
-                result.error,
+                exc,
             )
 
     return WaveResult(
