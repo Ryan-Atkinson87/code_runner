@@ -13,14 +13,14 @@ from app.renderer.base import (
 )
 from app.renderer.pipeline import compose_and_render
 from app.skills.loader import _parse_skill_file
-from app.skills.models import Skill, SkillStage
+from app.skills.models import Skill, SkillExecutor, SkillStage
 
 
 def _skill(
     skill_id: str,
     stage: SkillStage = SkillStage.IMPLEMENT,
     specialities: list[str] | None = None,
-    executor: str = "ai",
+    executor: SkillExecutor = "ai",
     applies_to: str | list[str] = "neutral",
     body: str = "",
 ) -> Skill:
@@ -290,8 +290,14 @@ class TestComposeAndRender:
     def test_full_pipeline(self) -> None:
         profile = ExecutionProfile(
             personas=[
-                PersonaEntry(type=PersonaType.IMPLEMENTOR, speciality="backend"),
-                PersonaEntry(type=PersonaType.REVIEWER, speciality="backend"),
+                PersonaEntry(
+                    type=PersonaType.IMPLEMENTOR,  # type: ignore[arg-type]
+                    speciality="backend",
+                ),
+                PersonaEntry(
+                    type=PersonaType.REVIEWER,  # type: ignore[arg-type]
+                    speciality="backend",
+                ),
             ]
         )
         skills = [
@@ -321,8 +327,14 @@ class TestComposeAndRender:
     def test_pipeline_includes_cross_cutting_for_all(self) -> None:
         profile = ExecutionProfile(
             personas=[
-                PersonaEntry(type=PersonaType.IMPLEMENTOR, speciality="backend"),
-                PersonaEntry(type=PersonaType.REVIEWER, speciality="backend"),
+                PersonaEntry(
+                    type=PersonaType.IMPLEMENTOR,  # type: ignore[arg-type]
+                    speciality="backend",
+                ),
+                PersonaEntry(
+                    type=PersonaType.REVIEWER,  # type: ignore[arg-type]
+                    speciality="backend",
+                ),
             ]
         )
         skills = [
@@ -340,7 +352,12 @@ class TestComposeAndRender:
 
     def test_pipeline_filters_provider_skills(self) -> None:
         profile = ExecutionProfile(
-            personas=[PersonaEntry(type=PersonaType.IMPLEMENTOR, speciality="backend")]
+            personas=[
+                PersonaEntry(
+                    type=PersonaType.IMPLEMENTOR,  # type: ignore[arg-type]
+                    speciality="backend",
+                ),
+            ]
         )
         skills = [
             _skill("claude-rule", SkillStage.IMPLEMENT, applies_to="claude"),
@@ -362,7 +379,12 @@ class TestComposeAndRender:
 
         wd = pathlib.Path(str(tmp_path))
         profile = ExecutionProfile(
-            personas=[PersonaEntry(type=PersonaType.IMPLEMENTOR, speciality="backend")]
+            personas=[
+                PersonaEntry(
+                    type=PersonaType.IMPLEMENTOR,  # type: ignore[arg-type]
+                    speciality="backend",
+                ),
+            ]
         )
         skills = [_skill("coding", SkillStage.IMPLEMENT)]
         result = compose_and_render(

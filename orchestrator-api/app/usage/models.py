@@ -20,6 +20,7 @@ class MeterKind:
     SEVEN_DAY_SONNET = "seven_day_sonnet"
     AGENT_SDK_CREDIT = "agent_sdk_credit"
     API_BUDGET = "api_budget"
+    API_REQUESTS = "api_requests"
 
 
 class Meter(BaseModel):

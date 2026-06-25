@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -23,7 +24,7 @@ from app.usage.policy import UsagePolicy
 
 
 @pytest.fixture()
-def state_store(tmp_path: Path) -> StateStore:
+def state_store(tmp_path: Path) -> Iterator[StateStore]:
     db_path = tmp_path / "test.db"
     s = StateStore(db_path)
     s.open()
@@ -32,7 +33,7 @@ def state_store(tmp_path: Path) -> StateStore:
         ("test-project", "Phase 5", "running"),
     )
     s.conn.commit()
-    yield s  # type: ignore[misc]
+    yield s
     s.close()
 
 

@@ -95,8 +95,8 @@ def _project_config() -> ProjectConfig:
 def _profile() -> ExecutionProfile:
     return ExecutionProfile(
         personas=[
-            PersonaEntry(type=PersonaType.IMPLEMENTOR, speciality="backend"),
-            PersonaEntry(type=PersonaType.REVIEWER, speciality="backend"),
+            PersonaEntry(type=PersonaType.IMPLEMENTOR, speciality="backend"),  # type: ignore[arg-type]
+            PersonaEntry(type=PersonaType.REVIEWER, speciality="backend"),  # type: ignore[arg-type]
         ]
     )
 

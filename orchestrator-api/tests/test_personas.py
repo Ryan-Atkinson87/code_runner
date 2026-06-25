@@ -8,14 +8,14 @@ from app.personas.composer import (
     filter_skills_for_persona,
 )
 from app.personas.models import ComposedPersona, Overlay, PersonaType
-from app.skills.models import Skill, SkillStage
+from app.skills.models import Skill, SkillExecutor, SkillStage
 
 
 def _skill(
     skill_id: str,
     stage: SkillStage = SkillStage.IMPLEMENT,
     specialities: list[str] | None = None,
-    executor: str = "ai",
+    executor: SkillExecutor = "ai",
 ) -> Skill:
     return Skill(
         id=skill_id,

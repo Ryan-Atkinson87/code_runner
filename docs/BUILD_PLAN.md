@@ -200,19 +200,19 @@ Listed in dependency order, in three workstreams: **observability backend** (#46
 phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the frontend scaffold
 (#59) fills the `<FRONTEND_*_CMD>` placeholders in `CLAUDE.md`.
 
-- [ ] #46 — Layer 1 raw event capture: compressed per-session structured event stream _(deps: #16, #3)_
+- [x] #46 — Layer 1 raw event capture: compressed per-session structured event stream _(deps: #16, #3)_
 - [ ] #47 — Langfuse trace emission: each AI session as a Layer 2 trace _(deps: #46, #17, #7)_
 - [ ] #48 — Efficiency rollups in SQLite: per issue/role/skill/wave/month aggregation _(deps: #46, #3)_
 - [ ] #49 — Storage cap and tiered retention pruning (~50GB; raw 90d / traces 180d / rollups indefinite) _(deps: #46, #47)_
 - [ ] #50 — Efficiency report generator: on-demand/per-wave/per-month + regression + suggestions _(deps: #48, #47)_
 - [ ] #51 — Run-control API: project/wave/provider selection + start/stop/pause/resume _(deps: #29, #2, #6)_
 - [ ] #52 — Live-progress SSE endpoint: normalised event stream _(deps: #46, #16, #6)_
-- [ ] #53 — Usage-gauges API: meters, governing meter, 80% line, override switch _(deps: #33, #36, #2)_
-- [ ] #54 — Blockers API: list parked blockers and respond inline _(deps: #43, #44, #2)_
-- [ ] #55 — PRs API: surface hand-off PRs with bodies and human checklists _(deps: #14, #13, #2)_
+- [x] #53 — Usage-gauges API: meters, governing meter, 80% line, override switch _(deps: #33, #36, #2)_
+- [x] #54 — Blockers API: list parked blockers and respond inline _(deps: #43, #44, #2)_
+- [x] #55 — PRs API: surface hand-off PRs with bodies and human checklists _(deps: #14, #13, #2)_
 - [ ] #56 — Efficiency-reports API: serve on-demand/wave/month report views _(deps: #50, #2)_
-- [ ] #57 — Config + notifications API: read/edit project config + channel toggle _(deps: #4, #41, #2)_
-- [ ] #58 — Profile-generation API: trigger tech-lead session, propose, human-confirm before write _(deps: #23, #2)_
+- [x] #57 — Config + notifications API: read/edit project config + channel toggle _(deps: #4, #41, #2)_
+- [x] #58 — Profile-generation API: trigger tech-lead session, propose, human-confirm before write _(deps: #23, #2)_
 - [ ] #59 — Scaffold orchestrator-ui (React + Vite + TS; eslint/prettier, vitest, tsc) _(deps: #7, #2)_ — `chore`
 - [ ] #60 — App shell: routing, login + session auth, API/SSE client, baseline UI states _(deps: #59, #6)_
 - [ ] #61 — Run-control screen: select project/wave(s)/provider, start/stop/pause/resume _(deps: #60, #51)_
@@ -223,6 +223,8 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [ ] #66 — Efficiency-reports screen: on-demand/per-wave/per-month views _(deps: #60, #56)_
 - [ ] #67 — Settings screen: config view read/edit + notifications toggle _(deps: #60, #57)_
 - [ ] #68 — Profile-generation screen: trigger session, review proposed profile, confirm before write _(deps: #60, #58)_
+- [x] #121 — Enable pyright type-checking on test files _(chore)_
+- [x] #123 — Replace lstrip with removeprefix in is_merged _(chore)_
 
 **Workable now (Phase-1/2/3/4/5 deps permitting):** #46 first (needs #16, #3). After #46: #47,
 #48 (parallel); then #49 (needs #46, #47) and #50 (needs #48, #47). The API issues unblock as

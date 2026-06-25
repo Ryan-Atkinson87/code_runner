@@ -17,6 +17,5 @@ tls:
   stores:
     default:
       defaultGeneratedCert:
-        resolver: default
         domain:
           main: "localhost"
