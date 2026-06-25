@@ -74,9 +74,9 @@ class RunController:
                 )
 
         cursor = self._conn.execute(
-            """INSERT INTO runs (project, milestone, status, started_at)
-               VALUES (?, ?, ?, datetime('now'))""",
-            (project, wave, RunStatus.RUNNING),
+            """INSERT INTO runs (project, milestone, status, provider, started_at)
+               VALUES (?, ?, ?, ?, datetime('now'))""",
+            (project, wave, RunStatus.RUNNING, provider),
         )
         self._conn.commit()
         run_id = cursor.lastrowid
@@ -148,7 +148,7 @@ class RunController:
 
     def get_status(self, run_id: int) -> RunState | None:
         row = self._conn.execute(
-            "SELECT id, project, milestone, status FROM runs WHERE id = ?",
+            "SELECT id, project, milestone, status, provider FROM runs WHERE id = ?",
             (run_id,),
         ).fetchone()
         if row is None:
@@ -157,7 +157,7 @@ class RunController:
             run_id=row[0],
             project=row[1],
             wave=row[2],
-            provider="",
+            provider=row[4],
             status=RunStatus(row[3]),
         )
 

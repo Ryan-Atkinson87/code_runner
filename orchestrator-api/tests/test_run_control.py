@@ -240,6 +240,16 @@ class TestRunStatus:
         assert resp.status_code == 200
         assert resp.json()["active"] is False
 
+    def test_status_returns_correct_provider(self, authed_client: TestClient) -> None:
+        authed_client.post(
+            "/runs/start", json={"wave": "test-wave", "provider": "claude"}
+        )
+        resp = authed_client.get("/runs/status")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["active"] is True
+        assert data["run"]["provider"] == "claude"
+
 
 class TestRunController:
     def test_start_creates_db_record(
@@ -299,6 +309,23 @@ class TestRunController:
     def test_list_waves_no_github(self, db_conn: sqlite3.Connection) -> None:
         ctrl = RunController(conn=db_conn)
         assert ctrl.list_waves() == []
+
+    def test_provider_persisted_to_db(
+        self, controller: RunController, db_conn: sqlite3.Connection
+    ) -> None:
+        state = controller.start_run("proj", "wave-1", "claude")
+        row = db_conn.execute(
+            "SELECT provider FROM runs WHERE id = ?",
+            (state.run_id,),
+        ).fetchone()
+        assert row is not None
+        assert row[0] == "claude"
+
+    def test_get_status_returns_provider(self, controller: RunController) -> None:
+        state = controller.start_run("proj", "wave-1", "claude")
+        fetched = controller.get_status(state.run_id)
+        assert fetched is not None
+        assert fetched.provider == "claude"
 
     def test_can_start_after_stop(self, controller: RunController) -> None:
         state = controller.start_run("proj", "wave-1", "claude")
