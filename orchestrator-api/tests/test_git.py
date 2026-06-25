@@ -146,6 +146,25 @@ class TestMerge:
         git_repo.merge("merged-branch")
         assert git_repo.is_merged("merged-branch", main)
 
+    def test_is_merged_current_branch_marker(self, git_repo: GitRepo) -> None:
+        """The active branch appears as '* name' in git branch --merged output.
+
+        removeprefix("* ") strips only the exact marker, unlike lstrip which
+        would also strip leading spaces and asterisks from the branch name.
+        """
+        main = git_repo.current_branch()
+        git_repo.create_and_checkout("merged-branch-2")
+        (git_repo.path / "m2.txt").write_text("m2\n")
+        git_repo.stage_all()
+        git_repo.commit("add m2 file")
+
+        git_repo.checkout(main)
+        git_repo.merge("merged-branch-2")
+
+        # Query from main — main itself appears with "* " prefix in output
+        assert git_repo.is_merged(main, main)
+        assert git_repo.is_merged("merged-branch-2", main)
+
 
 class TestStagingAndCommitting:
     def test_stage_and_commit(self, git_repo: GitRepo) -> None:
