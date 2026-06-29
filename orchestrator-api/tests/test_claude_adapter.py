@@ -190,24 +190,29 @@ class TestMapStopReason:
 
 
 class TestExecuteBash:
-    def test_simple_command(self, tmp_path: Path) -> None:
-        result = _execute_bash({"command": "echo hello"}, tmp_path)
+    @pytest.mark.asyncio
+    async def test_simple_command(self, tmp_path: Path) -> None:
+        result = await _execute_bash({"command": "echo hello"}, tmp_path)
         assert "hello" in result
 
-    def test_stderr_included(self, tmp_path: Path) -> None:
-        result = _execute_bash({"command": "echo err >&2"}, tmp_path)
+    @pytest.mark.asyncio
+    async def test_stderr_included(self, tmp_path: Path) -> None:
+        result = await _execute_bash({"command": "echo err >&2"}, tmp_path)
         assert "err" in result
 
-    def test_restart(self, tmp_path: Path) -> None:
-        result = _execute_bash({"restart": True}, tmp_path)
+    @pytest.mark.asyncio
+    async def test_restart(self, tmp_path: Path) -> None:
+        result = await _execute_bash({"restart": True}, tmp_path)
         assert "restarted" in result.lower()
 
-    def test_runs_in_workdir(self, tmp_path: Path) -> None:
-        result = _execute_bash({"command": "pwd"}, tmp_path)
+    @pytest.mark.asyncio
+    async def test_runs_in_workdir(self, tmp_path: Path) -> None:
+        result = await _execute_bash({"command": "pwd"}, tmp_path)
         assert str(tmp_path) in result
 
-    def test_no_output(self, tmp_path: Path) -> None:
-        result = _execute_bash({"command": "true"}, tmp_path)
+    @pytest.mark.asyncio
+    async def test_no_output(self, tmp_path: Path) -> None:
+        result = await _execute_bash({"command": "true"}, tmp_path)
         assert result == "(no output)"
 
 
@@ -304,22 +309,25 @@ class TestDeriveArtifacts:
         repo.rev_parse.return_value = result.stdout.strip()
         return repo
 
-    def test_uncommitted_changes(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_uncommitted_changes(self, tmp_path: Path) -> None:
         repo = self._init_repo(tmp_path)
         head_before = repo.rev_parse("HEAD")
         (tmp_path / "new_file.py").write_text("x = 1")
         (tmp_path / "initial.txt").write_text("modified")
-        artifacts = _derive_artifacts(repo, head_before)
+        artifacts = await _derive_artifacts(repo, head_before)
         assert "new_file.py" in artifacts
         assert "initial.txt" in artifacts
 
-    def test_no_changes(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_no_changes(self, tmp_path: Path) -> None:
         repo = self._init_repo(tmp_path)
         head_before = repo.rev_parse("HEAD")
-        artifacts = _derive_artifacts(repo, head_before)
+        artifacts = await _derive_artifacts(repo, head_before)
         assert artifacts == []
 
-    def test_committed_changes(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_committed_changes(self, tmp_path: Path) -> None:
         repo = self._init_repo(tmp_path)
         head_before = repo.rev_parse("HEAD")
         (tmp_path / "committed.py").write_text("y = 2")
@@ -329,7 +337,7 @@ class TestDeriveArtifacts:
             ["git", "rev-parse", "HEAD"], cwd=tmp_path, capture_output=True, text=True
         )
         repo.rev_parse.return_value = result.stdout.strip()
-        artifacts = _derive_artifacts(repo, head_before)
+        artifacts = await _derive_artifacts(repo, head_before)
         assert "committed.py" in artifacts
 
 
