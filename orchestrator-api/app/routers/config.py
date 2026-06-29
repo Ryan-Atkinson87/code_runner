@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, ValidationError
 
 from app.auth.dependencies import require_auth
+from app.config.loader import save_project_config
 from app.config.schema import (
     EgressSection,
     ProjectConfig,
@@ -123,6 +124,8 @@ async def update_provider(body: UpdateProviderRequest) -> ConfigResponse:
         ) from exc
 
     config.provider = new_provider
+    if _config_path:
+        save_project_config(config, _config_path)
     return _config_response(config)
 
 
@@ -140,6 +143,8 @@ async def update_egress(body: UpdateEgressRequest) -> ConfigResponse:
         ) from exc
 
     config.egress = new_egress
+    if _config_path:
+        save_project_config(config, _config_path)
     return _config_response(config)
 
 
@@ -156,4 +161,6 @@ async def update_notifications(
         update["email"] = body.email
 
     config.notifications = config.notifications.model_copy(update=update)
+    if _config_path:
+        save_project_config(config, _config_path)
     return _config_response(config)
