@@ -88,18 +88,21 @@ Start a new run.
 Stop a running or paused run.
 
 **Response 200:** `RunResponse` with `status: "stopped"`
+**Response 404:** run not found
 **Response 409:** run is not in a stoppable state
 
 ### `POST /runs/{run_id}/pause`
 Pause a running run.
 
 **Response 200:** `RunResponse` with `status: "paused"`
+**Response 404:** run not found
 **Response 409:** run is not running
 
 ### `POST /runs/{run_id}/resume`
 Resume a paused run.
 
 **Response 200:** `RunResponse` with `status: "running"`
+**Response 404:** run not found
 **Response 409:** run is not paused
 
 ---
@@ -175,3 +178,40 @@ Emitted when the run finishes. Stream closes after this frame.
 
 **Response 401:** missing or invalid session cookie
 **Response 200:** `text/event-stream` (connection held open)
+
+---
+
+## Error responses
+
+All error responses use the same JSON body shape regardless of status code:
+
+```json
+{ "detail": "human-readable message" }
+```
+
+| Status | Condition | Example `detail` |
+|--------|-----------|-----------------|
+| 401 | No valid session cookie | `"Not authenticated"` |
+| 404 | Resource not found (e.g. unknown run ID) | `"Run 42 not found"` |
+| 409 | State conflict (e.g. starting while already running) | `"Run 1 is already running; stop it first"` |
+| 422 | Request body failed validation | FastAPI validation error (see below) |
+| 429 | Rate limit exceeded (login endpoint only) | `"Too many attempts"` |
+
+### 422 Validation error shape
+
+FastAPI returns a structured error for validation failures:
+
+```json
+{
+  "detail": [
+    {
+      "type": "missing",
+      "loc": ["body", "wave"],
+      "msg": "Field required",
+      "input": {}
+    }
+  ]
+}
+```
+
+The `detail` field is a list of validation errors; each has `type`, `loc` (path to the failing field), `msg`, and `input`.
