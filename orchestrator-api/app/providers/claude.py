@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import subprocess
 import time
@@ -10,6 +11,7 @@ import anthropic
 from app.git.repo import GitRepo
 from app.providers.adapter import ProviderAdapter
 from app.providers.hooks import ToolPermissionError, create_audit_record, pre_tool_use_check
+from app.providers.pricing import calculate_cost
 from app.providers.types import (
     AuditRecord,
     EventKind,
@@ -89,14 +91,14 @@ class ClaudeAdapter(ProviderAdapter):
         except TimeoutError:
             outcome = SessionOutcome.ERROR
 
-        artifacts = _derive_artifacts(repo, head_before)
+        artifacts = await _derive_artifacts(repo, head_before)
 
         return SessionResult(
             events=events,
             usage=UsageReport(
                 tokens_in=tokens_in,
                 tokens_out=tokens_out,
-                cost_usd=0.0,
+                cost_usd=calculate_cost(model, tokens_in, tokens_out),
                 model=model,
                 duration_seconds=time.monotonic() - start,
             ),
@@ -217,7 +219,7 @@ async def _execute_tools(
 
         try:
             if block.name == "bash":
-                output = _execute_bash(tool_input, workdir)
+                output = await _execute_bash(tool_input, workdir)
             elif block.name == "str_replace_based_edit_tool":
                 output = _execute_text_editor(tool_input, workdir)
             else:
@@ -245,11 +247,12 @@ async def _execute_tools(
     return results, audit
 
 
-def _execute_bash(tool_input: dict[str, object], workdir: Path) -> str:
+async def _execute_bash(tool_input: dict[str, object], workdir: Path) -> str:
     if tool_input.get("restart"):
         return "Shell session restarted."
     command = str(tool_input.get("command", ""))
-    result = subprocess.run(
+    result = await asyncio.to_thread(
+        subprocess.run,
         ["bash", "-c", command],
         cwd=workdir,
         capture_output=True,
@@ -311,43 +314,30 @@ def _execute_text_editor(tool_input: dict[str, object], workdir: Path) -> str:
     return f"Unknown command: {command}"
 
 
-def _derive_artifacts(repo: GitRepo, head_before: str) -> list[str]:
+async def _derive_artifacts(repo: GitRepo, head_before: str) -> list[str]:
     changed: set[str] = set()
 
-    result = subprocess.run(
-        ["git", "diff", "--name-only"],
-        cwd=repo.path,
-        capture_output=True,
-        text=True,
-    )
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(args, cwd=repo.path, capture_output=True, text=True)
+
+    result = await asyncio.to_thread(run, ["git", "diff", "--name-only"])
     if result.stdout.strip():
         changed.update(result.stdout.strip().split("\n"))
 
-    result = subprocess.run(
-        ["git", "diff", "--cached", "--name-only"],
-        cwd=repo.path,
-        capture_output=True,
-        text=True,
-    )
+    result = await asyncio.to_thread(run, ["git", "diff", "--cached", "--name-only"])
     if result.stdout.strip():
         changed.update(result.stdout.strip().split("\n"))
 
     head_now = repo.rev_parse("HEAD")
     if head_now != head_before:
-        result = subprocess.run(
-            ["git", "diff", "--name-only", head_before, head_now],
-            cwd=repo.path,
-            capture_output=True,
-            text=True,
+        result = await asyncio.to_thread(
+            run, ["git", "diff", "--name-only", head_before, head_now]
         )
         if result.stdout.strip():
             changed.update(result.stdout.strip().split("\n"))
 
-    result = subprocess.run(
-        ["git", "ls-files", "--others", "--exclude-standard"],
-        cwd=repo.path,
-        capture_output=True,
-        text=True,
+    result = await asyncio.to_thread(
+        run, ["git", "ls-files", "--others", "--exclude-standard"]
     )
     if result.stdout.strip():
         changed.update(result.stdout.strip().split("\n"))

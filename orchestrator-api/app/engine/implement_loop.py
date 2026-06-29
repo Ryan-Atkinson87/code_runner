@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import logging
+import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 
@@ -8,9 +11,14 @@ from app.config.schema import RepoCommands
 from app.engine.markers import IssueMarker, WaveStep
 from app.gates.runner import GateRunResult, run_gates
 from app.git.repo import GitRepo
+from app.observability.capture import CaptureError, EventCaptureWriter
+from app.observability.langfuse_emitter import LangfuseEmitter
+from app.observability.models import SessionCapture
 from app.providers.adapter import ProviderAdapter
-from app.providers.types import SessionResult, SessionRole
+from app.providers.types import SessionResult, SessionRole, UsageReport
 from app.renderer.base import RenderedOutput
+
+logger = logging.getLogger(__name__)
 
 
 class ImplementOutcome(StrEnum):
@@ -52,6 +60,9 @@ async def implement_and_gate(
     run_id: int,
     model: str,
     allowed_tools: list[str],
+    wave_name: str = "",
+    capture_writer: EventCaptureWriter | None = None,
+    langfuse_emitter: LangfuseEmitter | None = None,
     test_fix_attempts: int = 3,
     checkpoint_timeout: float = _CHECKPOINT_TIMEOUT_SECONDS,
     max_checkpoints: int = _MAX_CHECKPOINTS,
@@ -81,9 +92,12 @@ async def implement_and_gate(
     while True:
         if last_gate_result is not None and not last_gate_result.all_passed:
             prompt = _build_fix_prompt(issue_body, last_gate_result)
+            skill = "implement_fix"
         else:
             prompt = _build_implement_prompt(issue_body, is_continuation)
+            skill = "implement"
 
+        started_at = datetime.now(UTC)
         session = await adapter.run_session(
             workdir=repo_path,
             role=SessionRole.IMPLEMENTOR,
@@ -92,7 +106,23 @@ async def implement_and_gate(
             prompt=prompt,
             context_files=[],
         )
+        finished_at = datetime.now(UTC)
         sessions.append(session)
+
+        _record_session(
+            session=session,
+            session_id=uuid.uuid4().hex,
+            run_id=run_id,
+            wave=wave_name,
+            issue_number=issue_number,
+            role=SessionRole.IMPLEMENTOR,
+            skill=skill,
+            model=model,
+            started_at=started_at,
+            finished_at=finished_at,
+            capture_writer=capture_writer,
+            langfuse_emitter=langfuse_emitter,
+        )
 
         if session.usage.duration_seconds >= checkpoint_timeout:
             _commit_wip(repo, issue_number)
@@ -152,6 +182,51 @@ async def implement_and_gate(
             checkpoint_count=checkpoint_count,
         )
         is_continuation = False
+
+
+def _record_session(
+    *,
+    session: SessionResult,
+    session_id: str,
+    run_id: int,
+    wave: str,
+    issue_number: int,
+    role: SessionRole,
+    skill: str,
+    model: str,
+    started_at: datetime,
+    finished_at: datetime,
+    capture_writer: EventCaptureWriter | None,
+    langfuse_emitter: LangfuseEmitter | None,
+) -> None:
+    if capture_writer is None and langfuse_emitter is None:
+        return
+
+    capture = SessionCapture(
+        session_id=session_id,
+        run_id=run_id,
+        wave=wave,
+        issue_number=issue_number,
+        role=role,
+        skill=skill,
+        model=model,
+        started_at=started_at,
+        finished_at=finished_at,
+        events=session.events,
+        usage=session.usage if isinstance(session.usage, UsageReport) else UsageReport(),
+        audit_log=session.audit_log,
+        outcome=session.outcome,
+        artifacts=session.artifacts,
+    )
+
+    if capture_writer is not None:
+        try:
+            capture_writer.write(capture)
+        except CaptureError as exc:
+            logger.warning("Layer 1 capture write failed for session %s: %s", session_id, exc)
+
+    if langfuse_emitter is not None:
+        langfuse_emitter.emit(capture)
 
 
 def _commit_wip(repo: GitRepo, issue_number: int) -> str | None:

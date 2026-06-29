@@ -25,6 +25,10 @@ class RunControlError(Exception):
     pass
 
 
+class RunNotFoundError(RunControlError):
+    pass
+
+
 @dataclass
 class RunState:
     run_id: int
@@ -54,7 +58,17 @@ class RunController:
         self._project_name = project_name
         self._repo_name = repo_name
         self._active_task: asyncio.Task[None] | None = None
-        self._active_run_id: int | None = None
+        self._active_run_id: int | None = self._recover_active_run_id()
+
+    def _recover_active_run_id(self) -> int | None:
+        row = self._conn.execute(
+            "SELECT id FROM runs WHERE status IN ('running', 'paused') ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        if row is None:
+            return None
+        run_id: int = row[0]
+        logger.info("Recovered active run %d from DB on startup", run_id)
+        return run_id
 
     @property
     def project_name(self) -> str:
@@ -172,7 +186,7 @@ class RunController:
     def list_waves(self) -> list[dict[str, Any]]:
         if self._github_client is None or not self._repo_name:
             return []
-        milestones = self._github_client.list_milestones(self._repo_name)
+        milestones = self._github_client.list_milestones(self._repo_name, state="all")
         return [
             {
                 "name": m.title,
@@ -185,7 +199,7 @@ class RunController:
     def _require_run(self, run_id: int) -> RunState:
         state = self.get_status(run_id)
         if state is None:
-            raise RunControlError(f"Run {run_id} not found")
+            raise RunNotFoundError(f"Run {run_id} not found")
         return state
 
     def _update_status(self, run_id: int, status: RunStatus) -> None:

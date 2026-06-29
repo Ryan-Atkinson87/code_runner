@@ -368,3 +368,60 @@ class TestMergeQueue:
         start_2 = events.index("start-2")
         end_2 = events.index("end-2")
         assert (end_1 < start_2) or (end_2 < start_1)
+
+    def test_prune_removes_idle_stale_entries(self) -> None:
+        queue = MergeQueue()
+        repo_a = Path("/tmp/repo-a")
+        repo_b = Path("/tmp/repo-b")
+
+        async def prime() -> None:
+            async with queue.serialise(repo_a):
+                pass
+            async with queue.serialise(repo_b):
+                pass
+
+        asyncio.run(prime())
+        assert len(queue._locks) == 2
+
+        queue.prune(active_paths={repo_a})
+        assert repo_a in queue._locks
+        assert repo_b not in queue._locks
+
+    def test_prune_preserves_held_locks(self) -> None:
+        queue = MergeQueue()
+        repo_path = Path("/tmp/held-repo")
+
+        async def run() -> None:
+            acquired = asyncio.Event()
+            release = asyncio.Event()
+
+            async def hold_lock() -> None:
+                async with queue.serialise(repo_path):
+                    acquired.set()
+                    await release.wait()
+
+            task = asyncio.create_task(hold_lock())
+            await acquired.wait()
+            queue.prune(active_paths=set())
+            assert repo_path in queue._locks
+            release.set()
+            await task
+
+        asyncio.run(run())
+
+    def test_prune_does_not_grow_beyond_active_set(self) -> None:
+        queue = MergeQueue()
+        paths = [Path(f"/tmp/repo-{i}") for i in range(5)]
+
+        async def prime_all() -> None:
+            for p in paths:
+                async with queue.serialise(p):
+                    pass
+
+        asyncio.run(prime_all())
+        assert len(queue._locks) == 5
+
+        active = set(paths[:2])
+        queue.prune(active_paths=active)
+        assert len(queue._locks) == 2
+        assert set(queue._locks.keys()) == active

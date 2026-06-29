@@ -291,11 +291,11 @@ class TestComposeAndRender:
         profile = ExecutionProfile(
             personas=[
                 PersonaEntry(
-                    type=PersonaType.IMPLEMENTOR,  # type: ignore[arg-type]
+                    type=PersonaType.IMPLEMENTOR,
                     speciality="backend",
                 ),
                 PersonaEntry(
-                    type=PersonaType.REVIEWER,  # type: ignore[arg-type]
+                    type=PersonaType.REVIEWER,
                     speciality="backend",
                 ),
             ]
@@ -328,11 +328,11 @@ class TestComposeAndRender:
         profile = ExecutionProfile(
             personas=[
                 PersonaEntry(
-                    type=PersonaType.IMPLEMENTOR,  # type: ignore[arg-type]
+                    type=PersonaType.IMPLEMENTOR,
                     speciality="backend",
                 ),
                 PersonaEntry(
-                    type=PersonaType.REVIEWER,  # type: ignore[arg-type]
+                    type=PersonaType.REVIEWER,
                     speciality="backend",
                 ),
             ]
@@ -354,7 +354,7 @@ class TestComposeAndRender:
         profile = ExecutionProfile(
             personas=[
                 PersonaEntry(
-                    type=PersonaType.IMPLEMENTOR,  # type: ignore[arg-type]
+                    type=PersonaType.IMPLEMENTOR,
                     speciality="backend",
                 ),
             ]
@@ -381,7 +381,7 @@ class TestComposeAndRender:
         profile = ExecutionProfile(
             personas=[
                 PersonaEntry(
-                    type=PersonaType.IMPLEMENTOR,  # type: ignore[arg-type]
+                    type=PersonaType.IMPLEMENTOR,
                     speciality="backend",
                 ),
             ]

@@ -11,6 +11,7 @@ from app.auth.sessions import SessionStore
 from app.config.schema import ProjectConfig
 from app.engine.run_manager import RunController
 from app.github.client import GitHubClient
+from app.progress.bus import ProgressBus
 from app.routers import health
 from app.routers.blockers import init_blockers_deps
 from app.routers.blockers import router as blockers_router
@@ -18,6 +19,8 @@ from app.routers.config import init_config_deps
 from app.routers.config import router as config_router
 from app.routers.profile import init_profile_deps
 from app.routers.profile import router as profile_router
+from app.routers.progress import init_progress_bus
+from app.routers.progress import router as progress_router
 from app.routers.prs import init_prs_deps
 from app.routers.prs import router as prs_router
 from app.routers.runs import init_run_controller
@@ -46,8 +49,10 @@ def create_app(
     github_client: GitHubClient | None = None,
     repo_name: str = "",
     project_config: ProjectConfig | None = None,
+    config_path: str | Path = "",
     profile_generate_fn: Callable[..., Awaitable[ProfileGenerationResult]] | None = None,
     profile_output_path: Path | None = None,
+    progress_bus: ProgressBus | None = None,
 ) -> FastAPI:
     if settings is None:
         settings = Settings()
@@ -68,13 +73,16 @@ def create_app(
         init_prs_deps(github_client, repo_name)
 
     if project_config is not None:
-        init_config_deps(project_config)
+        init_config_deps(project_config, str(config_path))
 
     if profile_generate_fn is not None:
         init_profile_deps(
             profile_generate_fn,
             profile_output_path or Path("execution-profile.yaml"),
         )
+
+    _bus = progress_bus or ProgressBus()
+    init_progress_bus(_bus)
 
     application = FastAPI(
         title=settings.app_name,
@@ -84,6 +92,7 @@ def create_app(
     application.include_router(health.router)
     application.include_router(auth_router)
     application.include_router(runs_router)
+    application.include_router(progress_router)
     application.include_router(usage_router)
     application.include_router(blockers_router)
     application.include_router(prs_router)

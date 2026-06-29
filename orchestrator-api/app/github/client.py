@@ -89,6 +89,10 @@ class GitHubClient:
         branch: str,
         remote: str = "origin",
     ) -> None:
+        if branch in PROTECTED_BRANCHES:
+            raise BranchProtectionError(
+                f"Refusing to delete protected branch: {branch}"
+            )
         result = subprocess.run(
             ["git", "push", remote, "--delete", branch],
             cwd=repo_path,

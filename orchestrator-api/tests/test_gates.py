@@ -127,6 +127,24 @@ class TestTimeout:
         assert "timed out" in test_result.stderr.lower()
         assert not result.all_passed
 
+    def test_partial_stdout_captured_on_timeout(self, repo_path: Path) -> None:
+        commands = RepoCommands(
+            test="echo 'partial output'; sleep 10",
+        )
+        result = run_gates("test-repo", repo_path, commands, timeout_seconds=0.5)
+        test_result = result.results[0]
+        assert test_result.status == GateStatus.TIMED_OUT
+        assert "partial output" in test_result.stdout
+
+    def test_partial_stderr_captured_on_timeout(self, repo_path: Path) -> None:
+        commands = RepoCommands(
+            test="echo 'partial error' >&2; sleep 10",
+        )
+        result = run_gates("test-repo", repo_path, commands, timeout_seconds=0.5)
+        test_result = result.results[0]
+        assert test_result.status == GateStatus.TIMED_OUT
+        assert "partial error" in test_result.stderr
+
 
 class TestGateRunResultProperties:
     def test_all_passed_with_mix(self, repo_path: Path) -> None:
