@@ -26,7 +26,7 @@ docker compose up -d --build
 |---|---|---|
 | `traefik` | Ingress, TLS, routing | Dashboard: http://localhost:8080 |
 | `orchestrator-api` | FastAPI backend | https://localhost/api/health |
-| `orchestrator-ui` | React UI (placeholder) | https://localhost/ |
+| `orchestrator-ui` | React + Vite + TypeScript UI | https://localhost/ |
 | `langfuse` | LLM observability | Internal (port 3000) |
 | `langfuse-db` | Postgres for Langfuse | Internal |
 | `agent-runner` | AI agent container (network-locked) | Internal |
@@ -71,3 +71,5 @@ docker compose down -v  # also remove volumes
 ## Development
 
 See [orchestrator-api/README.md](orchestrator-api/README.md) for backend dev commands.
+
+See [orchestrator-ui/README.md](orchestrator-ui/README.md) for frontend dev commands (`npm run dev`, `npm run test`, `npm run lint`, `npm run typecheck`).
