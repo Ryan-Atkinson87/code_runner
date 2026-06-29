@@ -78,9 +78,7 @@ class BlockerStore:
         return self._row_to_blocker(row)
 
     def _get_by_id(self, blocker_id: int) -> Blocker:
-        row = self._conn.execute(
-            "SELECT * FROM blockers WHERE id = ?", (blocker_id,)
-        ).fetchone()
+        row = self._conn.execute("SELECT * FROM blockers WHERE id = ?", (blocker_id,)).fetchone()
         if row is None:
             raise BlockerStoreError(f"Blocker {blocker_id} not found")
         return self._row_to_blocker(row)

@@ -37,8 +37,7 @@ class MergeQueue:
         in place so no in-flight merge is affected.
         """
         stale = [
-            p for p in list(self._locks)
-            if p not in active_paths and not self._locks[p].locked()
+            p for p in list(self._locks) if p not in active_paths and not self._locks[p].locked()
         ]
         for path in stale:
             del self._locks[path]

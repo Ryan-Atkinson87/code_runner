@@ -58,12 +58,8 @@ class TestParallelAcrossReposSequentialWithin:
         assert len(results) == 2
 
         # Serialised: one must finish before the other starts
-        start_indices = [
-            i for i, v in enumerate(order) if v.startswith("start")
-        ]
-        end_indices = [
-            i for i, v in enumerate(order) if v.startswith("end")
-        ]
+        start_indices = [i for i, v in enumerate(order) if v.startswith("start")]
+        end_indices = [i for i, v in enumerate(order) if v.startswith("end")]
         # First end must come before second start
         assert end_indices[0] < start_indices[1]
 

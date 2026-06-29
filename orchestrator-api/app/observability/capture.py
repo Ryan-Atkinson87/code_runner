@@ -69,18 +69,11 @@ class EventCaptureReader:
         if not month_dir.exists():
             return []
 
-        return [
-            p.name.removesuffix(".json.gz")
-            for p in sorted(month_dir.glob("*.json.gz"))
-        ]
+        return [p.name.removesuffix(".json.gz") for p in sorted(month_dir.glob("*.json.gz"))]
 
     def list_months(self) -> list[str]:
         captures_dir = self._base_dir / "captures"
         if not captures_dir.exists():
             return []
 
-        return sorted(
-            d.name
-            for d in captures_dir.iterdir()
-            if d.is_dir()
-        )
+        return sorted(d.name for d in captures_dir.iterdir() if d.is_dir())

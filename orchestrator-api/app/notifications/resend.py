@@ -26,16 +26,13 @@ class ResendChannel:
     ) -> None:
         api_key = secrets.get("resend_api_key", "")
         if not api_key:
-            raise ResendSendError(
-                "resend_api_key must be present in resolved secrets"
-            )
+            raise ResendSendError("resend_api_key must be present in resolved secrets")
         self._api_key = api_key
         self._from = from_address
         self._to = to_address or secrets.get("resend_to_address", "")
         if not self._to:
             raise ResendSendError(
-                "resend_to_address must be present in resolved "
-                "secrets or passed explicitly"
+                "resend_to_address must be present in resolved secrets or passed explicitly"
             )
         self._http = httpx.Client(timeout=30.0)
 
@@ -62,10 +59,7 @@ class ResendChannel:
             },
         )
         if response.status_code not in (200, 201):
-            raise ResendSendError(
-                f"Resend send failed ({response.status_code}): "
-                f"{response.text}"
-            )
+            raise ResendSendError(f"Resend send failed ({response.status_code}): {response.text}")
         logger.debug("Resend email sent to %s", self._to)
 
     def close(self) -> None:

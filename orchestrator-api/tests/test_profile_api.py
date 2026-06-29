@@ -105,9 +105,7 @@ class TestAuthGuard:
 
 
 class TestProposeProfile:
-    def test_returns_proposal_yaml(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_returns_proposal_yaml(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         async def gen() -> ProfileGenerationResult:
             return _make_success_result()
 
@@ -129,9 +127,7 @@ class TestProposeProfile:
         client.post("/profile/propose")
         assert not out.exists()
 
-    def test_error_returns_error(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_error_returns_error(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         async def gen() -> ProfileGenerationResult:
             return _make_error_result()
 
@@ -144,9 +140,7 @@ class TestProposeProfile:
 
 
 class TestConfirmProfile:
-    def test_writes_on_confirm(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_writes_on_confirm(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         async def gen() -> ProfileGenerationResult:
             return _make_success_result()
 
@@ -170,9 +164,7 @@ class TestConfirmProfile:
         resp = client.post("/profile/confirm")
         assert resp.status_code == 409
 
-    def test_double_confirm_fails(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_double_confirm_fails(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         async def gen() -> ProfileGenerationResult:
             return _make_success_result()
 
@@ -185,9 +177,7 @@ class TestConfirmProfile:
 
 
 class TestRejectProfile:
-    def test_reject_clears_proposal(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_reject_clears_proposal(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         async def gen() -> ProfileGenerationResult:
             return _make_success_result()
 

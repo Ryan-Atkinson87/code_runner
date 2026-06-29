@@ -80,9 +80,7 @@ class UsagePolicy:
     def state(self, *, now: float | None = None) -> UsagePolicyState:
         return UsagePolicyState(
             override_active=self._override,
-            peak_throttle_active=(
-                self.peak_hour_throttle_enabled and not self._override
-            ),
+            peak_throttle_active=(self.peak_hour_throttle_enabled and not self._override),
             in_peak_window=_in_peak_window(now),
         )
 

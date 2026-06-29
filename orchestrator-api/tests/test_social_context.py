@@ -64,19 +64,31 @@ MILESTONE_NEXT = Milestone(number=2, title="Phase 2", state="open")
 
 CLOSED_ISSUES = [
     Issue(
-        number=1, title="First feature", body="", state="closed",
-        repo="code_runner", milestone=MILESTONE_CURRENT,
+        number=1,
+        title="First feature",
+        body="",
+        state="closed",
+        repo="code_runner",
+        milestone=MILESTONE_CURRENT,
     ),
     Issue(
-        number=2, title="Second feature", body="", state="closed",
-        repo="code_runner", milestone=MILESTONE_CURRENT,
+        number=2,
+        title="Second feature",
+        body="",
+        state="closed",
+        repo="code_runner",
+        milestone=MILESTONE_CURRENT,
     ),
 ]
 
 OPEN_ISSUES = [
     Issue(
-        number=3, title="Unfinished task", body="", state="open",
-        repo="code_runner", milestone=MILESTONE_CURRENT,
+        number=3,
+        title="Unfinished task",
+        body="",
+        state="open",
+        repo="code_runner",
+        milestone=MILESTONE_CURRENT,
     ),
 ]
 
@@ -137,11 +149,7 @@ class TestRenderBlocks:
     def test_sections_present(self) -> None:
         ctx = WaveContext(wave_name="Phase 1", closed_issues=[], open_issues=[])
         blocks = _render_blocks(ctx)
-        headings = [
-            _block_text(b)
-            for b in blocks
-            if b.get("type") == "heading_2"
-        ]
+        headings = [_block_text(b) for b in blocks if b.get("type") == "heading_2"]
         assert "Current Status" in headings
         assert "Recent Milestones" in headings
         assert "What's Coming Next" in headings
@@ -156,7 +164,7 @@ class TestUpdateSuccess:
         github.list_milestones.return_value = [MILESTONE_CURRENT, MILESTONE_NEXT]
         github.list_issues.side_effect = [
             CLOSED_ISSUES,  # closed
-            [],             # open
+            [],  # open
         ]
 
         notion = MagicMock(spec=NotionClient)
@@ -176,8 +184,10 @@ class TestIdempotent:
         github = MagicMock(spec=GitHubClient)
         github.list_milestones.return_value = [MILESTONE_CURRENT, MILESTONE_NEXT]
         github.list_issues.side_effect = [
-            CLOSED_ISSUES, [],  # first run
-            CLOSED_ISSUES, [],  # second run
+            CLOSED_ISSUES,
+            [],  # first run
+            CLOSED_ISSUES,
+            [],  # second run
         ]
 
         notion = MagicMock(spec=NotionClient)
@@ -203,9 +213,7 @@ class TestFailurePaths:
         ]
 
         notion = MagicMock(spec=NotionClient)
-        notion.replace_block_children.side_effect = NotionError(
-            "Server error", status_code=500
-        )
+        notion.replace_block_children.side_effect = NotionError("Server error", status_code=500)
 
         updater = SocialContextUpdater(github, notion, _config())
         result = updater.update("Phase 1")
@@ -241,24 +249,32 @@ class TestMultiRepo:
         ms_next = Milestone(number=3, title="Phase 2", state="open")
 
         issue_a = Issue(
-            number=1, title="Backend done", body="", state="closed",
-            repo="backend", milestone=ms_a,
+            number=1,
+            title="Backend done",
+            body="",
+            state="closed",
+            repo="backend",
+            milestone=ms_a,
         )
         issue_b = Issue(
-            number=1, title="Frontend done", body="", state="closed",
-            repo="frontend", milestone=ms_b,
+            number=1,
+            title="Frontend done",
+            body="",
+            state="closed",
+            repo="frontend",
+            milestone=ms_b,
         )
 
         github = MagicMock(spec=GitHubClient)
         github.list_milestones.side_effect = [
-            [ms_a, ms_next],   # backend
-            [ms_b],            # frontend
+            [ms_a, ms_next],  # backend
+            [ms_b],  # frontend
         ]
         github.list_issues.side_effect = [
             [issue_a],  # backend closed
-            [],         # backend open
+            [],  # backend open
             [issue_b],  # frontend closed
-            [],         # frontend open
+            [],  # frontend open
         ]
 
         notion = MagicMock(spec=NotionClient)
@@ -286,7 +302,5 @@ def _block_text(block: dict[str, Any]) -> str:
     content = block.get(btype, {})
     rich_text = content.get("rich_text", [])
     return "".join(
-        item.get("text", {}).get("content", "")
-        for item in rich_text
-        if isinstance(item, dict)
+        item.get("text", {}).get("content", "") for item in rich_text if isinstance(item, dict)
     )

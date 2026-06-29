@@ -145,9 +145,7 @@ class SubscriptionUsageReader(UsageReader):
 
     def _token_estimation_fallback(self, now: float) -> UsageSnapshot:
         self.fallback_level = FallbackLevel.TOKEN_ESTIMATION
-        logger.warning(
-            "All usage readers failed; returning empty snapshot (token estimation)"
-        )
+        logger.warning("All usage readers failed; returning empty snapshot (token estimation)")
         return UsageSnapshot(
             meters=[],
             timestamp=now,
@@ -159,9 +157,7 @@ class SubscriptionUsageReader(UsageReader):
         if not self._credentials_path.exists():
             return None
         try:
-            data = json.loads(
-                self._credentials_path.read_text(encoding="utf-8")
-            )
+            data = json.loads(self._credentials_path.read_text(encoding="utf-8"))
             for key in ("accessToken", "access_token", "token"):
                 if key in data:
                     return str(data[key])

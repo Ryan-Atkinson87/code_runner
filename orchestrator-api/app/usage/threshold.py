@@ -43,9 +43,7 @@ def evaluate_threshold(
         return ThresholdResult(reached=False, governing=None, threshold_percent=threshold_percent)
 
     reached = gov.utilisation >= threshold_percent
-    return ThresholdResult(
-        reached=reached, governing=gov, threshold_percent=threshold_percent
-    )
+    return ThresholdResult(reached=reached, governing=gov, threshold_percent=threshold_percent)
 
 
 def human_reserve_meter(

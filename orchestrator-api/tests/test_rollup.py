@@ -193,9 +193,7 @@ class TestRollupsAccumulate:
         conn = _init_conn()
         store = RollupStore(conn)
         for i in range(3):
-            store.aggregate_session(
-                _capture(session_id=f"s{i}", tokens_in=1000, tokens_out=400)
-            )
+            store.aggregate_session(_capture(session_id=f"s{i}", tokens_in=1000, tokens_out=400))
         row = store.query()[0]
         assert row.session_count == 3
         assert row.tokens_in == 3000
@@ -231,10 +229,43 @@ class TestQueryFilters:
     def _populate(self) -> RollupStore:
         conn = _init_conn()
         store = RollupStore(conn)
-        store.aggregate_session(_capture(session_id="a", wave="P6", issue_number=47, role=SessionRole.IMPLEMENTOR, skill="implement"))  # noqa: E501
-        store.aggregate_session(_capture(session_id="b", wave="P6", issue_number=48, role=SessionRole.IMPLEMENTOR, skill="implement"))  # noqa: E501
-        store.aggregate_session(_capture(session_id="c", wave="P6", issue_number=47, role=SessionRole.ORCHESTRATOR, skill="review"))  # noqa: E501
-        store.aggregate_session(_capture(session_id="d", wave="P7", issue_number=47, role=SessionRole.IMPLEMENTOR, skill="implement", month_dt=datetime(2026, 7, 1, tzinfo=UTC)))  # noqa: E501
+        store.aggregate_session(
+            _capture(
+                session_id="a",
+                wave="P6",
+                issue_number=47,
+                role=SessionRole.IMPLEMENTOR,
+                skill="implement",
+            )
+        )  # noqa: E501
+        store.aggregate_session(
+            _capture(
+                session_id="b",
+                wave="P6",
+                issue_number=48,
+                role=SessionRole.IMPLEMENTOR,
+                skill="implement",
+            )
+        )  # noqa: E501
+        store.aggregate_session(
+            _capture(
+                session_id="c",
+                wave="P6",
+                issue_number=47,
+                role=SessionRole.ORCHESTRATOR,
+                skill="review",
+            )
+        )  # noqa: E501
+        store.aggregate_session(
+            _capture(
+                session_id="d",
+                wave="P7",
+                issue_number=47,
+                role=SessionRole.IMPLEMENTOR,
+                skill="implement",
+                month_dt=datetime(2026, 7, 1, tzinfo=UTC),
+            )
+        )  # noqa: E501
         return store
 
     def test_filter_by_issue(self) -> None:

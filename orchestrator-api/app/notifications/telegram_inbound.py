@@ -70,15 +70,12 @@ class TelegramInbound:
 
         if response.status_code != 200:
             raise TelegramInboundError(
-                f"Telegram getUpdates failed ({response.status_code}): "
-                f"{response.text}"
+                f"Telegram getUpdates failed ({response.status_code}): {response.text}"
             )
 
         data = response.json()
         if not data.get("ok"):
-            raise TelegramInboundError(
-                f"Telegram getUpdates returned error: {data}"
-            )
+            raise TelegramInboundError(f"Telegram getUpdates returned error: {data}")
 
         updates: list[TelegramUpdate] = []
         for item in data.get("result", []):

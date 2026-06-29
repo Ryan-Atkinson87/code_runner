@@ -57,9 +57,7 @@ def controller(db_conn: sqlite3.Connection, mock_github: MagicMock) -> RunContro
 
 
 @pytest.fixture()
-def authed_client(
-    monkeypatch: pytest.MonkeyPatch, controller: RunController
-) -> TestClient:
+def authed_client(monkeypatch: pytest.MonkeyPatch, controller: RunController) -> TestClient:
     monkeypatch.setenv("AUTH_PASSWORD_HASH", _TEST_HASH)
     monkeypatch.setattr(auth_router_mod, "_login_limiter", RateLimiter())
     app = create_app(
@@ -73,9 +71,7 @@ def authed_client(
 
 
 @pytest.fixture()
-def unauthed_client(
-    monkeypatch: pytest.MonkeyPatch, controller: RunController
-) -> TestClient:
+def unauthed_client(monkeypatch: pytest.MonkeyPatch, controller: RunController) -> TestClient:
     monkeypatch.setattr(auth_router_mod, "_login_limiter", RateLimiter())
     app = create_app(
         Settings(),
@@ -107,9 +103,7 @@ class TestAuthGuard:
 
 
 class TestListWaves:
-    def test_returns_milestones(
-        self, authed_client: TestClient, mock_github: MagicMock
-    ) -> None:
+    def test_returns_milestones(self, authed_client: TestClient, mock_github: MagicMock) -> None:
         resp = authed_client.get("/runs/waves")
         assert resp.status_code == 200
         data = resp.json()
@@ -141,9 +135,7 @@ class TestStartRun:
         assert resp.status_code == 422
 
     def test_rejects_invalid_provider(self, authed_client: TestClient) -> None:
-        resp = authed_client.post(
-            "/runs/start", json={"wave": "test", "provider": "invalid"}
-        )
+        resp = authed_client.post("/runs/start", json={"wave": "test", "provider": "invalid"})
         assert resp.status_code == 422
 
     def test_conflict_when_already_running(self, authed_client: TestClient) -> None:
@@ -253,9 +245,7 @@ class TestRunStatus:
         assert resp.json()["active"] is False
 
     def test_status_returns_correct_provider(self, authed_client: TestClient) -> None:
-        authed_client.post(
-            "/runs/start", json={"wave": "test-wave", "provider": "claude"}
-        )
+        authed_client.post("/runs/start", json={"wave": "test-wave", "provider": "claude"})
         resp = authed_client.get("/runs/status")
         assert resp.status_code == 200
         data = resp.json()
@@ -345,9 +335,7 @@ class TestRunController:
         new_state = controller.start_run("proj", "wave-2", "claude")
         assert new_state.status == RunStatus.RUNNING
 
-    def test_recovers_running_run_on_restart(
-        self, db_conn: sqlite3.Connection
-    ) -> None:
+    def test_recovers_running_run_on_restart(self, db_conn: sqlite3.Connection) -> None:
         original = RunController(conn=db_conn, project_name="proj", repo_name="repo")
         state = original.start_run("proj", "wave-1", "claude")
 
@@ -357,9 +345,7 @@ class TestRunController:
         assert active.run_id == state.run_id
         assert active.status == RunStatus.RUNNING
 
-    def test_recovers_paused_run_on_restart(
-        self, db_conn: sqlite3.Connection
-    ) -> None:
+    def test_recovers_paused_run_on_restart(self, db_conn: sqlite3.Connection) -> None:
         original = RunController(conn=db_conn, project_name="proj", repo_name="repo")
         state = original.start_run("proj", "wave-1", "claude")
         original.pause_run(state.run_id)
@@ -370,9 +356,7 @@ class TestRunController:
         assert active.run_id == state.run_id
         assert active.status == RunStatus.PAUSED
 
-    def test_no_recovery_when_run_stopped(
-        self, db_conn: sqlite3.Connection
-    ) -> None:
+    def test_no_recovery_when_run_stopped(self, db_conn: sqlite3.Connection) -> None:
         original = RunController(conn=db_conn, project_name="proj", repo_name="repo")
         state = original.start_run("proj", "wave-1", "claude")
         original.stop_run(state.run_id)

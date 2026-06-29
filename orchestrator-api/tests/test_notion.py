@@ -255,15 +255,19 @@ class TestBlockChildren:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                return _json_response({
-                    "results": [{"id": "block-1", "type": "paragraph"}],
-                    "has_more": True,
-                    "next_cursor": "cursor-2",
-                })
-            return _json_response({
-                "results": [{"id": "block-2", "type": "paragraph"}],
-                "has_more": False,
-            })
+                return _json_response(
+                    {
+                        "results": [{"id": "block-1", "type": "paragraph"}],
+                        "has_more": True,
+                        "next_cursor": "cursor-2",
+                    }
+                )
+            return _json_response(
+                {
+                    "results": [{"id": "block-2", "type": "paragraph"}],
+                    "has_more": False,
+                }
+            )
 
         client = self._make_client(handler)
         blocks = client.get_block_children("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
@@ -278,10 +282,12 @@ class TestBlockChildren:
         def handler(request: httpx.Request) -> httpx.Response:
             requests_seen.append((request.method, str(request.url)))
             if request.method == "GET" and "children" in str(request.url):
-                return _json_response({
-                    "results": [{"id": "old-block-1", "type": "paragraph"}],
-                    "has_more": False,
-                })
+                return _json_response(
+                    {
+                        "results": [{"id": "old-block-1", "type": "paragraph"}],
+                        "has_more": False,
+                    }
+                )
             if request.method == "DELETE":
                 return httpx.Response(200, json={})
             if request.method == "PATCH" and "children" in str(request.url):
@@ -324,10 +330,12 @@ class TestDatabaseOperations:
 
     def test_query_database(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
-            return _json_response({
-                "results": [SAMPLE_ROW],
-                "has_more": False,
-            })
+            return _json_response(
+                {
+                    "results": [SAMPLE_ROW],
+                    "has_more": False,
+                }
+            )
 
         client = self._make_client(handler)
         rows = client.query_database("db000000-0000-0000-0000-000000000001")
@@ -343,11 +351,13 @@ class TestDatabaseOperations:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                return _json_response({
-                    "results": [SAMPLE_ROW],
-                    "has_more": True,
-                    "next_cursor": "cursor-2",
-                })
+                return _json_response(
+                    {
+                        "results": [SAMPLE_ROW],
+                        "has_more": True,
+                        "next_cursor": "cursor-2",
+                    }
+                )
             row2 = {**SAMPLE_ROW, "id": "row00000-0000-0000-0000-000000000002"}
             return _json_response({"results": [row2], "has_more": False})
 
@@ -372,11 +382,13 @@ class TestDatabaseOperations:
     def test_create_database_row(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             body = json.loads(request.content)
-            return _json_response({
-                "id": "b0b00000-0000-0000-0000-000000000001",
-                "object": "page",
-                "properties": body.get("properties", {}),
-            })
+            return _json_response(
+                {
+                    "id": "b0b00000-0000-0000-0000-000000000001",
+                    "object": "page",
+                    "properties": body.get("properties", {}),
+                }
+            )
 
         client = self._make_client(handler)
         row = client.create_database_row(
@@ -389,11 +401,13 @@ class TestDatabaseOperations:
 
     def test_update_database_row(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
-            return _json_response({
-                "id": "a0a00000-0000-0000-0000-000000000001",
-                "object": "page",
-                "properties": {"Status": {"select": {"name": "Done"}}},
-            })
+            return _json_response(
+                {
+                    "id": "a0a00000-0000-0000-0000-000000000001",
+                    "object": "page",
+                    "properties": {"Status": {"select": {"name": "Done"}}},
+                }
+            )
 
         client = self._make_client(handler)
         row = client.update_database_row(
@@ -423,26 +437,32 @@ class TestDiscoverDatabases:
         def handler(request: httpx.Request) -> httpx.Response:
             path = str(request.url)
             if "children" in path:
-                return _json_response({
-                    "results": [
-                        {"id": tech_db_id, "type": "child_database"},
-                        {"id": user_db_id, "type": "child_database"},
-                        {"id": "some-block", "type": "paragraph"},
-                    ],
-                    "has_more": False,
-                })
+                return _json_response(
+                    {
+                        "results": [
+                            {"id": tech_db_id, "type": "child_database"},
+                            {"id": user_db_id, "type": "child_database"},
+                            {"id": "some-block", "type": "paragraph"},
+                        ],
+                        "has_more": False,
+                    }
+                )
             if tech_db_id in path:
-                return _json_response({
-                    **SAMPLE_DATABASE,
-                    "id": tech_db_id,
-                    "title": [{"plain_text": "Technical Tasks"}],
-                })
+                return _json_response(
+                    {
+                        **SAMPLE_DATABASE,
+                        "id": tech_db_id,
+                        "title": [{"plain_text": "Technical Tasks"}],
+                    }
+                )
             if user_db_id in path:
-                return _json_response({
-                    **SAMPLE_DATABASE,
-                    "id": user_db_id,
-                    "title": [{"plain_text": "User Stories"}],
-                })
+                return _json_response(
+                    {
+                        **SAMPLE_DATABASE,
+                        "id": user_db_id,
+                        "title": [{"plain_text": "User Stories"}],
+                    }
+                )
             return _json_response({})
 
         client = self._make_client(handler)
@@ -469,16 +489,20 @@ class TestDiscoverDatabases:
 
         def handler(request: httpx.Request) -> httpx.Response:
             if "children" in str(request.url):
-                return _json_response({
-                    "results": [{"id": tech_db_id, "type": "child_database"}],
-                    "has_more": False,
-                })
+                return _json_response(
+                    {
+                        "results": [{"id": tech_db_id, "type": "child_database"}],
+                        "has_more": False,
+                    }
+                )
             if tech_db_id in str(request.url):
-                return _json_response({
-                    **SAMPLE_DATABASE,
-                    "id": tech_db_id,
-                    "title": [{"plain_text": "Technical Tasks"}],
-                })
+                return _json_response(
+                    {
+                        **SAMPLE_DATABASE,
+                        "id": tech_db_id,
+                        "title": [{"plain_text": "Technical Tasks"}],
+                    }
+                )
             return _json_response({})
 
         client = self._make_client(handler)

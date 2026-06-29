@@ -106,9 +106,7 @@ class NotionClient:
             cursor = data.get("next_cursor")
         return results
 
-    def replace_block_children(
-        self, block_ref: str, children: list[dict[str, Any]]
-    ) -> None:
+    def replace_block_children(self, block_ref: str, children: list[dict[str, Any]]) -> None:
         block_id = normalize_ref(block_ref)
         existing = self.get_block_children(block_ref)
         for block in existing:
@@ -155,9 +153,7 @@ class NotionClient:
             cursor = data.get("next_cursor")
         return results
 
-    def create_database_row(
-        self, db_ref: str, properties: dict[str, Any]
-    ) -> DatabaseRow:
+    def create_database_row(self, db_ref: str, properties: dict[str, Any]) -> DatabaseRow:
         db_id = normalize_ref(db_ref)
         resp = self._request_with_backoff(
             "POST",
@@ -167,9 +163,7 @@ class NotionClient:
         data = resp.json()
         return DatabaseRow(id=data["id"], properties=data.get("properties", {}))
 
-    def update_database_row(
-        self, row_ref: str, properties: dict[str, Any]
-    ) -> DatabaseRow:
+    def update_database_row(self, row_ref: str, properties: dict[str, Any]) -> DatabaseRow:
         row_id = normalize_ref(row_ref)
         resp = self._request_with_backoff(
             "PATCH", f"/v1/pages/{row_id}", json={"properties": properties}

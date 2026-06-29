@@ -94,7 +94,8 @@ class TestTelegramChannel:
     def test_send_non_json_error(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(
-                502, text="Bad Gateway",
+                502,
+                text="Bad Gateway",
                 headers={"content-type": "text/plain"},
             )
 

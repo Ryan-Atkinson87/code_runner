@@ -94,7 +94,7 @@ class TestLogout:
 
 
 class TestSession:
-    def test_returns_authenticated_with_valid_session(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_authenticated_with_valid_session(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("AUTH_PASSWORD_HASH", _TEST_HASH)
         client = _make_client()
         client.post("/login", json={"password": _TEST_PASSWORD})

@@ -75,15 +75,9 @@ class UsageMonitor:
                 error=str(exc),
             )
 
-        threshold_result = evaluate_threshold(
-            snapshot, self._threshold_percent
-        )
-        cap_result = apply_cap_step(
-            self._scheduler, snapshot, self._threshold_percent
-        )
-        action = self._policy.evaluate(
-            threshold_reached=threshold_result.reached
-        )
+        threshold_result = evaluate_threshold(snapshot, self._threshold_percent)
+        cap_result = apply_cap_step(self._scheduler, snapshot, self._threshold_percent)
+        action = self._policy.evaluate(threshold_reached=threshold_result.reached)
 
         if action == PolicyAction.PAUSE and self._pause_manager and run_id:
             gov = governing_meter(snapshot)

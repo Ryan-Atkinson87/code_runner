@@ -100,9 +100,7 @@ class V005_BlockerResolutionResponse:
     description = "Store human response text when resolving a blocker"
 
     def apply(self, conn: sqlite3.Connection) -> None:
-        conn.execute(
-            "ALTER TABLE blockers ADD COLUMN resolution_response TEXT"
-        )
+        conn.execute("ALTER TABLE blockers ADD COLUMN resolution_response TEXT")
 
 
 class V006_RunProvider:
@@ -110,9 +108,7 @@ class V006_RunProvider:
     description = "Persist provider choice on each run"
 
     def apply(self, conn: sqlite3.Connection) -> None:
-        conn.execute(
-            "ALTER TABLE runs ADD COLUMN provider TEXT NOT NULL DEFAULT 'claude'"
-        )
+        conn.execute("ALTER TABLE runs ADD COLUMN provider TEXT NOT NULL DEFAULT 'claude'")
 
 
 class V007_EfficiencyRollups:

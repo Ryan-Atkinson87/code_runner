@@ -87,9 +87,7 @@ class UsagePauseManager:
         ).fetchone()
         return row is not None
 
-    def get_pause_state(
-        self, run_id: int
-    ) -> tuple[str, float, float | None] | None:
+    def get_pause_state(self, run_id: int) -> tuple[str, float, float | None] | None:
         """Return (meter_kind, utilisation, resets_at) or None."""
         row = self._conn.execute(
             """SELECT governing_meter_kind, governing_utilisation, resets_at

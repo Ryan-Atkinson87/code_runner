@@ -23,8 +23,7 @@ class TelegramChannel:
         chat_id = secrets.get("telegram_chat_id", "")
         if not token or not chat_id:
             raise TelegramSendError(
-                "telegram_bot_token and telegram_chat_id must be "
-                "present in resolved secrets"
+                "telegram_bot_token and telegram_chat_id must be present in resolved secrets"
             )
         self._token = token
         self._chat_id = chat_id
@@ -54,8 +53,7 @@ class TelegramChannel:
             data = response.json() if content_type.startswith("application/json") else {}
             description = data.get("description", response.text)
             raise TelegramSendError(
-                f"Telegram sendMessage failed ({response.status_code}): "
-                f"{description}"
+                f"Telegram sendMessage failed ({response.status_code}): {description}"
             )
         logger.debug("Telegram message sent to chat %s", self._chat_id)
 
@@ -63,12 +61,8 @@ class TelegramChannel:
         self._http.close()
 
 
-_MD_V2_SPECIAL = frozenset(
-    "_*[]()~`>#+-=|{}.!"
-)
+_MD_V2_SPECIAL = frozenset("_*[]()~`>#+-=|{}.!")
 
 
 def _escape_markdown(text: str) -> str:
-    return "".join(
-        f"\\{ch}" if ch in _MD_V2_SPECIAL else ch for ch in text
-    )
+    return "".join(f"\\{ch}" if ch in _MD_V2_SPECIAL else ch for ch in text)

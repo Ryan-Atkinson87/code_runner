@@ -47,9 +47,7 @@ class TestUsageSnapshot:
             Meter(kind=MeterKind.FIVE_HOUR, utilisation=30.0),
             Meter(kind=MeterKind.SEVEN_DAY, utilisation=60.0),
         ]
-        snap = UsageSnapshot(
-            meters=meters, provider="claude", plan="pro", timestamp=1000.0
-        )
+        snap = UsageSnapshot(meters=meters, provider="claude", plan="pro", timestamp=1000.0)
         assert len(snap.meters) == 2
         assert snap.timestamp == 1000.0
 
@@ -76,16 +74,12 @@ class TestGoverningMeter:
     def test_tie_broken_deterministically(self) -> None:
         m1 = Meter(kind="alpha", utilisation=80.0)
         m2 = Meter(kind="beta", utilisation=80.0)
-        snap = UsageSnapshot(
-            meters=[m1, m2], provider="claude", plan="pro", timestamp=1.0
-        )
+        snap = UsageSnapshot(meters=[m1, m2], provider="claude", plan="pro", timestamp=1.0)
         result = governing_meter(snap)
         assert result is not None
         assert result.kind == "beta"
 
-        snap_reversed = UsageSnapshot(
-            meters=[m2, m1], provider="claude", plan="pro", timestamp=1.0
-        )
+        snap_reversed = UsageSnapshot(meters=[m2, m1], provider="claude", plan="pro", timestamp=1.0)
         result2 = governing_meter(snap_reversed)
         assert result2 is not None
         assert result2.kind == "beta"
@@ -108,9 +102,7 @@ class TestGoverningMeter:
             Meter(kind=MeterKind.SEVEN_DAY_SONNET, utilisation=20.0),
             Meter(kind=MeterKind.AGENT_SDK_CREDIT, utilisation=90.0),
         ]
-        snap = UsageSnapshot(
-            meters=meters, provider="claude", plan="max", timestamp=1.0
-        )
+        snap = UsageSnapshot(meters=meters, provider="claude", plan="max", timestamp=1.0)
         result = governing_meter(snap)
         assert result is not None
         assert result.kind == MeterKind.AGENT_SDK_CREDIT

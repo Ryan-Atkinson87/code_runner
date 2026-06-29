@@ -124,14 +124,15 @@ class TestSSEEndpoint:
 
         async def read_stream() -> None:
             transport = httpx.ASGITransport(app=app)
-            async with httpx.AsyncClient(
-                transport=transport, base_url="http://test"
-            ) as client, client.stream(
-                "GET",
-                "/runs/1/progress",
-                cookies={"session_id": sid},
-                timeout=5.0,
-            ) as resp:
+            async with (
+                httpx.AsyncClient(transport=transport, base_url="http://test") as client,
+                client.stream(
+                    "GET",
+                    "/runs/1/progress",
+                    cookies={"session_id": sid},
+                    timeout=5.0,
+                ) as resp,
+            ):
                 assert resp.status_code == 200
                 assert "text/event-stream" in resp.headers["content-type"]
                 current_event: str | None = None
@@ -175,14 +176,15 @@ class TestSSEEndpoint:
 
         async def read_headers() -> None:
             transport = httpx.ASGITransport(app=app)
-            async with httpx.AsyncClient(
-                transport=transport, base_url="http://test"
-            ) as client, client.stream(
-                "GET",
-                "/runs/1/progress",
-                cookies={"session_id": sid},
-                timeout=3.0,
-            ) as resp:
+            async with (
+                httpx.AsyncClient(transport=transport, base_url="http://test") as client,
+                client.stream(
+                    "GET",
+                    "/runs/1/progress",
+                    cookies={"session_id": sid},
+                    timeout=3.0,
+                ) as resp,
+            ):
                 headers_seen.update(dict(resp.headers))
                 async for _ in resp.aiter_lines():
                     break

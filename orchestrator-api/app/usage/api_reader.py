@@ -88,11 +88,7 @@ def _build_meters(parsed: dict[str, float]) -> list[Meter]:
 
     requests_limit = parsed.get("requests_limit")
     requests_remaining = parsed.get("requests_remaining")
-    if (
-        requests_limit is not None
-        and requests_remaining is not None
-        and requests_limit > 0
-    ):
+    if requests_limit is not None and requests_remaining is not None and requests_limit > 0:
         used = requests_limit - requests_remaining
         utilisation = (used / requests_limit) * 100.0
         meters.append(

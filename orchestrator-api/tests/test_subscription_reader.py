@@ -133,9 +133,7 @@ class TestSubscriptionReaderOAuth:
             )
         )
         client = httpx.AsyncClient(transport=transport)
-        reader = SubscriptionUsageReader(
-            creds, "claude", "pro", http_client=client
-        )
+        reader = SubscriptionUsageReader(creds, "claude", "pro", http_client=client)
 
         snapshot = await reader.read()
         assert snapshot.provider == "claude"
@@ -157,9 +155,7 @@ class TestSubscriptionReaderOAuth:
 
         transport = httpx.MockTransport(handler)
         client = httpx.AsyncClient(transport=transport)
-        reader = SubscriptionUsageReader(
-            creds, "claude", "pro", http_client=client
-        )
+        reader = SubscriptionUsageReader(creds, "claude", "pro", http_client=client)
 
         await reader.read()
         await reader.read()
@@ -170,13 +166,9 @@ class TestSubscriptionReaderOAuth:
         creds = tmp_path / "credentials.json"
         creds.write_text(json.dumps({"access_token": "test-token"}))
 
-        transport = httpx.MockTransport(
-            lambda request: httpx.Response(200, json=_oauth_response())
-        )
+        transport = httpx.MockTransport(lambda request: httpx.Response(200, json=_oauth_response()))
         client = httpx.AsyncClient(transport=transport)
-        reader = SubscriptionUsageReader(
-            creds, "claude", "pro", http_client=client
-        )
+        reader = SubscriptionUsageReader(creds, "claude", "pro", http_client=client)
 
         snapshot = await reader.read()
         assert len(snapshot.meters) == 5
@@ -194,9 +186,7 @@ class TestSubscriptionReaderOAuth:
 
         transport = httpx.MockTransport(handler)
         client = httpx.AsyncClient(transport=transport)
-        reader = SubscriptionUsageReader(
-            creds, "claude", "pro", http_client=client
-        )
+        reader = SubscriptionUsageReader(creds, "claude", "pro", http_client=client)
         await reader.read()
 
         assert captured_headers["authorization"] == "Bearer my-token"
@@ -210,9 +200,7 @@ class TestSubscriptionReaderFallbackToStatusLine:
         creds.write_text(json.dumps({"accessToken": "test-token"}))
 
         status_line = tmp_path / "status_line.json"
-        status_line.write_text(
-            json.dumps({"rate_limits": {"five_hour": 55.0, "seven_day": 40.0}})
-        )
+        status_line.write_text(json.dumps({"rate_limits": {"five_hour": 55.0, "seven_day": 40.0}}))
 
         transport = httpx.MockTransport(
             lambda request: httpx.Response(500, text="Internal Server Error")
@@ -237,9 +225,7 @@ class TestSubscriptionReaderFallbackToStatusLine:
     async def test_falls_back_when_no_credentials(self, tmp_path: Path) -> None:
         missing_creds = tmp_path / "nonexistent.json"
         status_line = tmp_path / "status_line.json"
-        status_line.write_text(
-            json.dumps({"rate_limits": {"five_hour": 10.0}})
-        )
+        status_line.write_text(json.dumps({"rate_limits": {"five_hour": 10.0}}))
 
         reader = SubscriptionUsageReader(
             missing_creds,
@@ -257,9 +243,7 @@ class TestSubscriptionReaderTokenEstimationFallback:
     @pytest.mark.anyio
     async def test_falls_back_to_token_estimation(self, tmp_path: Path) -> None:
         missing_creds = tmp_path / "nonexistent.json"
-        reader = SubscriptionUsageReader(
-            missing_creds, "claude", "pro"
-        )
+        reader = SubscriptionUsageReader(missing_creds, "claude", "pro")
 
         snapshot = await reader.read()
         assert reader.fallback_level == FallbackLevel.TOKEN_ESTIMATION
@@ -271,9 +255,7 @@ class TestSubscriptionReaderTokenEstimationFallback:
         creds = tmp_path / "credentials.json"
         creds.write_text(json.dumps({"accessToken": "test-token"}))
 
-        transport = httpx.MockTransport(
-            lambda request: httpx.Response(429, text="Rate limited")
-        )
+        transport = httpx.MockTransport(lambda request: httpx.Response(429, text="Rate limited"))
         client = httpx.AsyncClient(transport=transport)
 
         bad_status = tmp_path / "status_line.json"
@@ -320,9 +302,7 @@ class TestSubscriptionReaderEdgeCases:
             lambda request: httpx.Response(200, json={"completely": "different"})
         )
         client = httpx.AsyncClient(transport=transport)
-        reader = SubscriptionUsageReader(
-            creds, "claude", "pro", http_client=client
-        )
+        reader = SubscriptionUsageReader(creds, "claude", "pro", http_client=client)
 
         snapshot = await reader.read()
         assert reader.fallback_level == FallbackLevel.OAUTH

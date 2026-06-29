@@ -46,25 +46,29 @@ def _init_repo(path: Path) -> GitRepo:
     subprocess.run(["git", "init"], cwd=path, capture_output=True, check=True)
     subprocess.run(
         ["git", "config", "user.email", "test@test.com"],
-        cwd=path, capture_output=True, check=True,
+        cwd=path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.name", "Test"],
-        cwd=path, capture_output=True, check=True,
+        cwd=path,
+        capture_output=True,
+        check=True,
     )
     (path / "init.txt").write_text("init")
     subprocess.run(["git", "add", "."], cwd=path, capture_output=True, check=True)
     subprocess.run(
         ["git", "commit", "-m", "init"],
-        cwd=path, capture_output=True, check=True,
+        cwd=path,
+        capture_output=True,
+        check=True,
     )
     return GitRepo(path)
 
 
 class TestMarkerWriteRead:
-    def test_write_and_read(
-        self, marker_store: IssueMarker, run_id: int
-    ) -> None:
+    def test_write_and_read(self, marker_store: IssueMarker, run_id: int) -> None:
         marker_store.write(run_id, 42, WaveStep.TEST_GATE)
         result = marker_store.read(run_id, 42)
         assert result is not None
@@ -72,23 +76,17 @@ class TestMarkerWriteRead:
         assert step == WaveStep.TEST_GATE
         assert count == 0
 
-    def test_read_missing_returns_none(
-        self, marker_store: IssueMarker, run_id: int
-    ) -> None:
+    def test_read_missing_returns_none(self, marker_store: IssueMarker, run_id: int) -> None:
         assert marker_store.read(run_id, 999) is None
 
-    def test_write_updates_existing(
-        self, marker_store: IssueMarker, run_id: int
-    ) -> None:
+    def test_write_updates_existing(self, marker_store: IssueMarker, run_id: int) -> None:
         marker_store.write(run_id, 10, WaveStep.BRANCH_CREATED)
         marker_store.write(run_id, 10, WaveStep.IMPLEMENTING)
         result = marker_store.read(run_id, 10)
         assert result is not None
         assert result[0] == WaveStep.IMPLEMENTING
 
-    def test_read_all(
-        self, marker_store: IssueMarker, run_id: int
-    ) -> None:
+    def test_read_all(self, marker_store: IssueMarker, run_id: int) -> None:
         marker_store.write(run_id, 1, WaveStep.DEPENDENCY_CHECK)
         marker_store.write(run_id, 2, WaveStep.TEST_GATE)
         all_markers = marker_store.read_all(run_id)
@@ -96,26 +94,23 @@ class TestMarkerWriteRead:
         assert all_markers[1][0] == WaveStep.DEPENDENCY_CHECK
         assert all_markers[2][0] == WaveStep.TEST_GATE
 
-    def test_clear(
-        self, marker_store: IssueMarker, run_id: int
-    ) -> None:
+    def test_clear(self, marker_store: IssueMarker, run_id: int) -> None:
         marker_store.write(run_id, 5, WaveStep.MERGED)
         marker_store.clear(run_id, 5)
         assert marker_store.read(run_id, 5) is None
 
-    def test_checkpoint_count_explicit(
-        self, marker_store: IssueMarker, run_id: int
-    ) -> None:
+    def test_checkpoint_count_explicit(self, marker_store: IssueMarker, run_id: int) -> None:
         marker_store.write(
-            run_id, 7, WaveStep.IMPLEMENTING, checkpoint_count=2,
+            run_id,
+            7,
+            WaveStep.IMPLEMENTING,
+            checkpoint_count=2,
         )
         result = marker_store.read(run_id, 7)
         assert result is not None
         assert result[1] == 2
 
-    def test_increment_checkpoint(
-        self, marker_store: IssueMarker, run_id: int
-    ) -> None:
+    def test_increment_checkpoint(self, marker_store: IssueMarker, run_id: int) -> None:
         marker_store.write(run_id, 8, WaveStep.IMPLEMENTING)
         new_count = marker_store.increment_checkpoint(run_id, 8)
         assert new_count == 1
@@ -152,8 +147,12 @@ class TestEvaluateRecovery:
     ) -> None:
         repo = _init_repo(tmp_path / "repo")
         decision = evaluate_recovery(
-            marker_store, repo, run_id, 42,
-            "feature/issue-42", "main",
+            marker_store,
+            repo,
+            run_id,
+            42,
+            "feature/issue-42",
+            "main",
         )
         assert decision.action == RecoveryAction.RESUME
         assert decision.marker_step is None
@@ -171,8 +170,12 @@ class TestEvaluateRecovery:
         marker_store.write(run_id, 10, WaveStep.TEST_GATE)
 
         decision = evaluate_recovery(
-            marker_store, repo, run_id, 10,
-            "feature/issue-10", "agent-branch",
+            marker_store,
+            repo,
+            run_id,
+            10,
+            "feature/issue-10",
+            "agent-branch",
         )
         assert decision.action == RecoveryAction.RESUME
         assert decision.marker_step == WaveStep.TEST_GATE
@@ -190,8 +193,12 @@ class TestEvaluateRecovery:
         marker_store.write(run_id, 10, WaveStep.IMPLEMENTING)
 
         decision = evaluate_recovery(
-            marker_store, repo, run_id, 10,
-            "feature/issue-10", "agent-branch",
+            marker_store,
+            repo,
+            run_id,
+            10,
+            "feature/issue-10",
+            "agent-branch",
         )
         assert decision.action == RecoveryAction.RESET
         assert decision.marker_step == WaveStep.IMPLEMENTING
@@ -204,8 +211,12 @@ class TestEvaluateRecovery:
         marker_store.write(run_id, 99, WaveStep.MERGED)
 
         decision = evaluate_recovery(
-            marker_store, repo, run_id, 99,
-            "feature/issue-99", "main",
+            marker_store,
+            repo,
+            run_id,
+            99,
+            "feature/issue-99",
+            "main",
         )
         assert decision.action == RecoveryAction.RESUME
         reason = decision.reason.lower()
@@ -222,8 +233,12 @@ class TestEvaluateRecovery:
         repo.commit("work")
 
         decision = evaluate_recovery(
-            marker_store, repo, run_id, 5,
-            "feature/issue-5", "agent-branch",
+            marker_store,
+            repo,
+            run_id,
+            5,
+            "feature/issue-5",
+            "agent-branch",
         )
         assert decision.action == RecoveryAction.RESET
         assert "no marker" in decision.reason.lower()
@@ -237,8 +252,12 @@ class TestEvaluateRecovery:
         repo.checkout("main")
 
         decision = evaluate_recovery(
-            marker_store, repo, run_id, 3,
-            "feature/issue-3", "agent-branch",
+            marker_store,
+            repo,
+            run_id,
+            3,
+            "feature/issue-3",
+            "agent-branch",
         )
         assert decision.action == RecoveryAction.RESUME
         assert "no commits" in decision.reason.lower()
@@ -264,8 +283,14 @@ class TestWaveStep:
 
     def test_step_values(self) -> None:
         expected = {
-            "dependency_check", "branch_created", "implementing",
-            "test_gate", "contract_verify", "internal_pr",
-            "review", "merged", "synced",
+            "dependency_check",
+            "branch_created",
+            "implementing",
+            "test_gate",
+            "contract_verify",
+            "internal_pr",
+            "review",
+            "merged",
+            "synced",
         }
         assert {s.value for s in WaveStep} == expected
