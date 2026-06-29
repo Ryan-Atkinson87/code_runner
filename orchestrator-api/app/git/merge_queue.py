@@ -28,3 +28,17 @@ class MergeQueue:
         lock = self._lock_for(repo_path)
         async with lock:
             yield
+
+    def prune(self, active_paths: set[Path]) -> None:
+        """Remove lock entries for paths not in *active_paths* and not currently held.
+
+        Call after a wave completes to keep the dict bounded to the active repo set.
+        Only idle locks (not currently acquired) are removed; held locks are left
+        in place so no in-flight merge is affected.
+        """
+        stale = [
+            p for p in list(self._locks)
+            if p not in active_paths and not self._locks[p].locked()
+        ]
+        for path in stale:
+            del self._locks[path]
