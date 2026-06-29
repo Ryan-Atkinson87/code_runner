@@ -1,18 +1,12 @@
 from __future__ import annotations
 
-from enum import StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.personas.models import PersonaType
 
-class PersonaType(StrEnum):
-    PLANNER = "planner"
-    IMPLEMENTOR = "implementor"
-    REVIEWER = "reviewer"
-    QA_REVIEWER = "qa-reviewer"
-    TECH_LEAD = "tech-lead"
-
+__all__ = ["PersonaType"]
 
 StageExecutorOverride = Literal["ai", "engine"]
 
