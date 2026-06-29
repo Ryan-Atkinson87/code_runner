@@ -2,10 +2,10 @@ import os
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from fastapi import APIRouter, Cookie, HTTPException, Request, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
-from app.auth.dependencies import get_session_store
+from app.auth.dependencies import get_session_store, require_auth
 from app.auth.rate_limit import RateLimiter
 
 router = APIRouter(tags=["auth"])
@@ -15,6 +15,13 @@ _login_limiter = RateLimiter()
 
 class LoginRequest(BaseModel):
     password: str
+
+
+@router.get("/session")
+async def session(session_id: str = Depends(require_auth)) -> dict[str, str]:
+    """Return 200 when the session cookie is valid, 401 otherwise (via require_auth)."""
+    _ = session_id
+    return {"status": "authenticated"}
 
 
 @router.post("/login")

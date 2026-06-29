@@ -15,6 +15,11 @@ REST + SSE API served by `orchestrator-api`. All routes except `/health`, `/logi
 ### `POST /logout`
 - **Response 200:** `{ "status": "ok" }` + clears cookie
 
+### `GET /session`
+Check whether the current session cookie is valid (used by the frontend to determine initial auth state).
+- **Response 200:** `{ "status": "authenticated" }`
+- **Response 401:** missing or invalid session cookie
+
 ---
 
 ## Run control

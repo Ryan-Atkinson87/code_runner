@@ -93,6 +93,21 @@ class TestLogout:
         assert response.status_code == 200
 
 
+class TestSession:
+    def test_returns_authenticated_with_valid_session(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("AUTH_PASSWORD_HASH", _TEST_HASH)
+        client = _make_client()
+        client.post("/login", json={"password": _TEST_PASSWORD})
+        response = client.get("/session")
+        assert response.status_code == 200
+        assert response.json()["status"] == "authenticated"
+
+    def test_returns_401_without_session(self) -> None:
+        client = _make_client()
+        response = client.get("/session")
+        assert response.status_code == 401
+
+
 class TestRateLimit:
     def test_blocked_after_max_failures(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(auth_router_mod, "_login_limiter", RateLimiter(max_attempts=3))
