@@ -181,6 +181,264 @@ Emitted when the run finishes. Stream closes after this frame.
 
 ---
 
+## Usage gauges
+
+### `GET /usage/gauges`
+Current usage meter snapshot for the active provider.
+
+**Response 200:**
+```json
+{
+  "meters": [
+    {
+      "kind": "token_daily",
+      "utilisation": 0.62,
+      "resets_at": 1750060800.0,
+      "limit": 1000000,
+      "used": 620000,
+      "is_governing": true
+    }
+  ],
+  "threshold_percent": 80,
+  "threshold_reached": false,
+  "override_active": false,
+  "provider": "claude",
+  "plan": "pro"
+}
+```
+
+`kind` values depend on the provider plan (e.g. `token_daily`, `token_monthly`, `request_per_minute`). `is_governing` is `true` on the most-restrictive meter. `resets_at`, `limit`, and `used` are `null` when not applicable for a meter type.
+
+**Response 401:** missing or invalid session cookie
+
+### `POST /usage/override`
+Enable or disable the human override (bypasses the 80% threshold gate).
+
+**Body:**
+```json
+{ "active": true }
+```
+
+**Response 200:**
+```json
+{ "override_active": true }
+```
+
+**Response 401:** missing or invalid session cookie
+
+---
+
+## Blockers
+
+### `GET /blockers`
+List parked blockers for the active run.
+
+**Response 200:**
+```json
+{
+  "blockers": [
+    {
+      "id": 1,
+      "run_id": 7,
+      "issue_number": 42,
+      "blocker_type": "missing_spec",
+      "reason": "Spec §12 does not cover the empty-state for the PRs screen.",
+      "needed_to_unblock": "Confirm whether the empty state should show a link to GitHub or just a message.",
+      "status": "parked",
+      "created_at": "2026-06-29T10:00:00Z",
+      "resolved_at": null,
+      "resolution_response": null
+    }
+  ],
+  "run_id": 7
+}
+```
+
+`blocker_type` is one of: `missing_spec`, `contract_conflict`, `unmet_dependency`, `stuck_agent`, `other`.
+`status` is one of: `parked`, `resolved`.
+
+**Response 401:** missing or invalid session cookie
+**Response 404:** no active run
+
+### `POST /blockers/{issue_number}/resolve`
+Resolve a parked blocker for the given issue with a human response. The response is routed into the engine.
+
+**Path params:** `issue_number` — integer
+
+**Body:**
+```json
+{ "response": "The empty state should show a message and a link to the GitHub milestone." }
+```
+
+**Response 200:** `BlockerResponse` (same shape as the objects inside `blockers` above, with `status: "resolved"`)
+**Response 401:** missing or invalid session cookie
+**Response 404:** no active run or blocker not found for that issue
+
+---
+
+## PRs
+
+### `GET /prs`
+List open hand-off PRs for the current repo. Optionally filter by head branch.
+
+**Query params:** `head` (optional string) — filter to PRs from a specific head branch
+
+**Response 200:**
+```json
+{
+  "prs": [
+    {
+      "number": 42,
+      "title": "#12 Add project.yaml loader",
+      "body": "## Summary\n...\n- [ ] Review the config schema\n- [x] Tests pass",
+      "html_url": "https://github.com/owner/repo/pull/42",
+      "head_branch": "issue-12-config-loader",
+      "base_branch": "main",
+      "state": "open",
+      "checklist": [
+        { "text": "Review the config schema", "checked": false },
+        { "text": "Tests pass", "checked": true }
+      ]
+    }
+  ]
+}
+```
+
+`checklist` is parsed from `- [ ]` / `- [x]` lines in the PR body.
+
+**Response 401:** missing or invalid session cookie
+**Response 502:** GitHub API error
+
+### `GET /prs/{pr_number}`
+Get a single PR by number.
+
+**Path params:** `pr_number` — integer
+
+**Response 200:** `HandoffPR` (same shape as the objects inside `prs` above)
+**Response 401:** missing or invalid session cookie
+**Response 502:** GitHub API error
+
+---
+
+## Config
+
+### `GET /config`
+Read the current project configuration. Secrets are shown by reference (env-var names) only — values are never returned.
+
+**Response 200:**
+```json
+{
+  "project_name": "my-project",
+  "project_description": "Autonomous coding agent orchestrator",
+  "provider": {
+    "default": "claude",
+    "plan": "pro",
+    "models": {
+      "planning": "claude-opus-4-8",
+      "implementing": "claude-sonnet-4-6",
+      "reviewing": "claude-sonnet-4-6"
+    }
+  },
+  "egress": {
+    "allow": ["api.anthropic.com", "api.github.com"]
+  },
+  "notifications": {
+    "telegram": true,
+    "email": false
+  },
+  "secrets": {
+    "ANTHROPIC_API_KEY": "ANTHROPIC_API_KEY",
+    "GITHUB_TOKEN": "GITHUB_TOKEN"
+  }
+}
+```
+
+**Response 401:** missing or invalid session cookie
+
+### `PUT /config/provider`
+Update the provider/model mapping. All fields are optional — omit to leave unchanged.
+
+**Body:**
+```json
+{
+  "default": "claude",
+  "plan": "pro",
+  "models": { "planning": "claude-opus-4-8", "implementing": "claude-sonnet-4-6", "reviewing": "claude-sonnet-4-6" }
+}
+```
+
+`default` must be one of `"claude"`, `"codex"`, `"gemini"`.
+
+**Response 200:** full `ConfigResponse` (same shape as `GET /config`)
+**Response 401:** missing or invalid session cookie
+**Response 422:** invalid provider name or model config
+
+### `PUT /config/egress`
+Replace the egress allowlist.
+
+**Body:**
+```json
+{ "allow": ["api.anthropic.com", "api.github.com"] }
+```
+
+**Response 200:** full `ConfigResponse`
+**Response 401:** missing or invalid session cookie
+**Response 422:** validation error
+
+### `PUT /config/notifications`
+Toggle notification channels. Omit a field to leave its state unchanged.
+
+**Body:**
+```json
+{ "telegram": true, "email": false }
+```
+
+**Response 200:** full `ConfigResponse`
+**Response 401:** missing or invalid session cookie
+
+---
+
+## Profile generation
+
+### `POST /profile/propose`
+Trigger the tech-lead profile-generation session. Long-running — the response is returned when the session completes.
+
+**Response 200:**
+```json
+{
+  "outcome": "proposed",
+  "raw_yaml": "---\nprovider:\n  default: claude\n  plan: pro\n...",
+  "error": ""
+}
+```
+
+`outcome` is one of: `proposed`, `error`. On `error`, `raw_yaml` is `""` and `error` contains the message.
+
+**Response 401:** missing or invalid session cookie
+
+### `POST /profile/confirm`
+Write the pending proposed profile to disk. Must be called after a successful `/profile/propose`.
+
+**Response 200:**
+```json
+{ "written": true, "path": "execution-profile.yaml" }
+```
+
+**Response 401:** missing or invalid session cookie
+**Response 409:** no pending proposal (propose must be called first)
+
+### `POST /profile/reject`
+Discard the pending proposal. Nothing is written.
+
+**Response 200:**
+```json
+{ "written": false, "path": "" }
+```
+
+**Response 401:** missing or invalid session cookie
+
+---
+
 ## Error responses
 
 All error responses use the same JSON body shape regardless of status code:
