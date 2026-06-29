@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
@@ -18,12 +20,12 @@ def _default_run_id_fn() -> None:
     return None
 
 
-_run_id_fn: callable = _default_run_id_fn  # type: ignore[assignment]
+_run_id_fn: Callable[[], int | None] = _default_run_id_fn
 
 
 def init_blockers_deps(
     store: BlockerStore,
-    run_id_fn: callable,  # type: ignore[type-arg]
+    run_id_fn: Callable[[], int | None],
 ) -> None:
     global _store, _run_id_fn
     _store = store
