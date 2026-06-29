@@ -110,9 +110,7 @@ class TestUsageMonitor:
         assert result.state.cap_step.new_cap == 2
 
     @pytest.mark.anyio
-    async def test_check_sets_pause_state(
-        self, store: StateStore, run_id: int
-    ) -> None:
+    async def test_check_sets_pause_state(self, store: StateStore, run_id: int) -> None:
         reader = FakeReader(utilisation=85.0)
         pause_mgr = UsagePauseManager(store.conn)
         monitor = UsageMonitor(
@@ -248,9 +246,7 @@ class TestEndToEndSimulation:
         assert pause_mgr.is_paused(run_id) is False
 
     @pytest.mark.anyio
-    async def test_override_bypasses_full_chain(
-        self, store: StateStore, run_id: int
-    ) -> None:
+    async def test_override_bypasses_full_chain(self, store: StateStore, run_id: int) -> None:
         reader = FakeReader(utilisation=90.0)
         scheduler = WaveScheduler(cap=3)
         pause_mgr = UsagePauseManager(store.conn)

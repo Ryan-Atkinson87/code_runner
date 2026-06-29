@@ -90,9 +90,7 @@ class GitHubClient:
         remote: str = "origin",
     ) -> None:
         if branch in PROTECTED_BRANCHES:
-            raise BranchProtectionError(
-                f"Refusing to delete protected branch: {branch}"
-            )
+            raise BranchProtectionError(f"Refusing to delete protected branch: {branch}")
         result = subprocess.run(
             ["git", "push", remote, "--delete", branch],
             cwd=repo_path,
@@ -118,9 +116,7 @@ class GitHubClient:
         return self._parse_pr(response.json())
 
     def merge_pull_request(self, repo: str, number: int) -> None:
-        raise NotImplementedError(
-            "Engine must not merge GitHub PRs — human gate (Spec §5.4)"
-        )
+        raise NotImplementedError("Engine must not merge GitHub PRs — human gate (Spec §5.4)")
 
     def get_pull_request(self, repo: str, number: int) -> PullRequest:
         response = self._request("GET", f"/repos/{self._owner}/{repo}/pulls/{number}")
@@ -170,11 +166,7 @@ class GitHubClient:
             },
         )
         items = response.json()
-        issues = [
-            self._parse_issue(i, repo)
-            for i in items
-            if "pull_request" not in i
-        ]
+        issues = [self._parse_issue(i, repo) for i in items if "pull_request" not in i]
         return issues
 
     @staticmethod

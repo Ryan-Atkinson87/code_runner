@@ -81,8 +81,15 @@ class TestSkillStage:
 
     def test_stage_values(self) -> None:
         expected = {
-            "plan", "implement", "test", "contract-verify",
-            "review", "qa", "integrate", "escalate", "cross-cutting",
+            "plan",
+            "implement",
+            "test",
+            "contract-verify",
+            "review",
+            "qa",
+            "integrate",
+            "escalate",
+            "cross-cutting",
         }
         assert {s.value for s in SkillStage} == expected
 

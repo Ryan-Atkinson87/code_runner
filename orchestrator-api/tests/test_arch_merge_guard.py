@@ -48,8 +48,7 @@ class TestNoUnauthorisedMergeCalls:
             "Unauthorised GitHub merge call(s) found in app/ source.\n"
             "The engine must not merge PRs — human gate (Spec §5.4).\n"
             "The only allowed location is the deny-method in "
-            "app/github/client.py.\n\n"
-            + "\n".join(violations)
+            "app/github/client.py.\n\n" + "\n".join(violations)
         )
 
     def test_no_shell_merge_commands_anywhere(self) -> None:
@@ -67,8 +66,7 @@ class TestNoUnauthorisedMergeCalls:
 
         assert violations == [], (
             "Shell-level `gh pr merge` call(s) found.\n"
-            "The engine must not merge PRs — human gate (Spec §5.4).\n\n"
-            + "\n".join(violations)
+            "The engine must not merge PRs — human gate (Spec §5.4).\n\n" + "\n".join(violations)
         )
 
     def test_no_github_api_merge_endpoints(self) -> None:
@@ -86,6 +84,5 @@ class TestNoUnauthorisedMergeCalls:
 
         assert violations == [], (
             "Direct GitHub API merge endpoint call(s) found.\n"
-            "The engine must not merge PRs — human gate (Spec §5.4).\n\n"
-            + "\n".join(violations)
+            "The engine must not merge PRs — human gate (Spec §5.4).\n\n" + "\n".join(violations)
         )

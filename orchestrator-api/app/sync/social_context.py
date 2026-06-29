@@ -55,12 +55,8 @@ class SocialContextUpdater:
         try:
             context = self._build_wave_context(wave_name)
             blocks = _render_blocks(context)
-            self._notion.replace_block_children(
-                notion_cfg.social_context_page, blocks
-            )
-            logger.info(
-                "Social Media Context page updated for wave %r", wave_name
-            )
+            self._notion.replace_block_children(notion_cfg.social_context_page, blocks)
+            logger.info("Social Media Context page updated for wave %r", wave_name)
             return SocialContextResult(success=True)
         except NotionError as exc:
             msg = f"Social Context update failed: {exc}"
@@ -79,14 +75,10 @@ class SocialContextUpdater:
             if matching:
                 milestone = matching[0]
                 closed.extend(
-                    self._github.list_issues(
-                        repo_entry.name, milestone.number, state="closed"
-                    )
+                    self._github.list_issues(repo_entry.name, milestone.number, state="closed")
                 )
                 open_issues.extend(
-                    self._github.list_issues(
-                        repo_entry.name, milestone.number, state="open"
-                    )
+                    self._github.list_issues(repo_entry.name, milestone.number, state="open")
                 )
 
             open_milestones = [m for m in milestones if m.state == "open"]
@@ -110,16 +102,13 @@ def _render_blocks(context: WaveContext) -> list[dict[str, Any]]:
 
     if context.open_issues:
         status = (
-            f"Wave \"{context.wave_name}\" is in progress. "
+            f'Wave "{context.wave_name}" is in progress. '
             f"{len(context.closed_issues)} issue(s) completed, "
             f"{len(context.open_issues)} remaining."
         )
     else:
         count = len(context.closed_issues)
-        status = (
-            f"Wave \"{context.wave_name}\" is complete. "
-            f"All {count} issue(s) delivered."
-        )
+        status = f'Wave "{context.wave_name}" is complete. All {count} issue(s) delivered.'
 
     blocks.append(_paragraph_block(status))
 
@@ -127,22 +116,16 @@ def _render_blocks(context: WaveContext) -> list[dict[str, Any]]:
 
     if context.closed_issues:
         for issue in context.closed_issues:
-            blocks.append(
-                _bulleted_list_block(f"#{issue.number} {issue.title}")
-            )
+            blocks.append(_bulleted_list_block(f"#{issue.number} {issue.title}"))
     else:
         blocks.append(_paragraph_block("No issues completed yet in this wave."))
 
     blocks.append(_heading_block("What's Coming Next"))
 
     if context.next_milestone:
-        blocks.append(
-            _paragraph_block(f"Next up: {context.next_milestone.title}.")
-        )
+        blocks.append(_paragraph_block(f"Next up: {context.next_milestone.title}."))
     else:
-        blocks.append(
-            _paragraph_block("No upcoming milestones scheduled.")
-        )
+        blocks.append(_paragraph_block("No upcoming milestones scheduled."))
 
     return blocks
 

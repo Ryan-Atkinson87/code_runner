@@ -99,7 +99,10 @@ class RunController:
 
         logger.info(
             "Run %d started: project=%s wave=%s provider=%s",
-            run_id, project, wave, provider,
+            run_id,
+            project,
+            wave,
+            provider,
         )
 
         return RunState(

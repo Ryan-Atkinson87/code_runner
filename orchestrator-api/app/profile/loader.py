@@ -26,19 +26,13 @@ def load_execution_profile(path: str | Path) -> ExecutionProfile:
     try:
         data = yaml.safe_load(raw)
     except yaml.YAMLError as exc:
-        raise ProfileLoadError(
-            f"Invalid YAML in {path}: {exc}"
-        ) from exc
+        raise ProfileLoadError(f"Invalid YAML in {path}: {exc}") from exc
 
     if not isinstance(data, dict):
         actual = type(data).__name__
-        raise ProfileLoadError(
-            f"Expected a YAML mapping at top level in {path}, got {actual}"
-        )
+        raise ProfileLoadError(f"Expected a YAML mapping at top level in {path}, got {actual}")
 
     try:
         return ExecutionProfile.model_validate(data)
     except ValidationError as exc:
-        raise ProfileLoadError(
-            f"Profile validation failed for {path}:\n{exc}"
-        ) from exc
+        raise ProfileLoadError(f"Profile validation failed for {path}:\n{exc}") from exc

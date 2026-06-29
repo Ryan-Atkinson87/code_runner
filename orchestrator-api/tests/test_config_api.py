@@ -28,9 +28,7 @@ _TEST_HASH = _ph.hash(_TEST_PASSWORD)
 def _make_config() -> ProjectConfig:
     return ProjectConfig(
         project=ProjectSection(name="test-project", description="A test"),
-        integrations=IntegrationsSection(
-            github=GitHubIntegration(owner="test-org")
-        ),
+        integrations=IntegrationsSection(github=GitHubIntegration(owner="test-org")),
         repos=[RepoEntry(name="api", path="./api")],
         secrets={"GITHUB_PAT": "GITHUB_PAT", "API_KEY": "API_KEY"},
     )
@@ -38,6 +36,7 @@ def _make_config() -> ProjectConfig:
 
 def _write_config_yaml(path: Path, config: ProjectConfig) -> None:
     from app.config.loader import save_project_config
+
     save_project_config(config, path)
 
 
@@ -66,26 +65,18 @@ def _make_client(
 
 
 class TestAuthGuard:
-    def test_read_rejected_unauthenticated(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_read_rejected_unauthenticated(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch, authed=False)
         assert client.get("/config").status_code == 401
 
-    def test_update_rejected_unauthenticated(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_update_rejected_unauthenticated(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch, authed=False)
-        resp = client.put(
-            "/config/provider", json={"default": "codex"}
-        )
+        resp = client.put("/config/provider", json={"default": "codex"})
         assert resp.status_code == 401
 
 
 class TestReadConfig:
-    def test_returns_config(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_returns_config(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
         resp = client.get("/config")
         assert resp.status_code == 200
@@ -93,26 +84,20 @@ class TestReadConfig:
         assert data["project_name"] == "test-project"
         assert data["project_description"] == "A test"
 
-    def test_secrets_are_references_only(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_secrets_are_references_only(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
         resp = client.get("/config")
         secrets = resp.json()["secrets"]
         assert secrets["GITHUB_PAT"] == "GITHUB_PAT"
         assert secrets["API_KEY"] == "API_KEY"
 
-    def test_provider_section(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_provider_section(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
         resp = client.get("/config")
         provider = resp.json()["provider"]
         assert provider["default"] == "claude"
 
-    def test_notifications_section(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_notifications_section(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
         resp = client.get("/config")
         notif = resp.json()["notifications"]
@@ -121,53 +106,35 @@ class TestReadConfig:
 
 
 class TestUpdateProvider:
-    def test_update_default_provider(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_update_default_provider(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
-        resp = client.put(
-            "/config/provider", json={"default": "codex"}
-        )
+        resp = client.put("/config/provider", json={"default": "codex"})
         assert resp.status_code == 200
         assert resp.json()["provider"]["default"] == "codex"
 
-    def test_update_plan(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_update_plan(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
-        resp = client.put(
-            "/config/provider", json={"plan": "max"}
-        )
+        resp = client.put("/config/provider", json={"plan": "max"})
         assert resp.status_code == 200
         assert resp.json()["provider"]["plan"] == "max"
 
-    def test_invalid_provider_rejected(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_invalid_provider_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
-        resp = client.put(
-            "/config/provider", json={"default": "openai"}
-        )
+        resp = client.put("/config/provider", json={"default": "openai"})
         assert resp.status_code == 422
 
 
 class TestUpdateEgress:
-    def test_update_allowlist(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_update_allowlist(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
         resp = client.put(
             "/config/egress",
             json={"allow": ["api.github.com", "pypi.org"]},
         )
         assert resp.status_code == 200
-        assert resp.json()["egress"]["allow"] == [
-            "api.github.com", "pypi.org"
-        ]
+        assert resp.json()["egress"]["allow"] == ["api.github.com", "pypi.org"]
 
-    def test_empty_allowlist(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_empty_allowlist(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
         resp = client.put("/config/egress", json={"allow": []})
         assert resp.status_code == 200
@@ -175,31 +142,21 @@ class TestUpdateEgress:
 
 
 class TestNotificationToggle:
-    def test_toggle_email_on(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_toggle_email_on(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
-        resp = client.put(
-            "/config/notifications", json={"email": True}
-        )
+        resp = client.put("/config/notifications", json={"email": True})
         assert resp.status_code == 200
         data = resp.json()
         assert data["notifications"]["email"] is True
         assert data["notifications"]["telegram"] is True
 
-    def test_toggle_telegram_off(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_toggle_telegram_off(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
-        resp = client.put(
-            "/config/notifications", json={"telegram": False}
-        )
+        resp = client.put("/config/notifications", json={"telegram": False})
         assert resp.status_code == 200
         assert resp.json()["notifications"]["telegram"] is False
 
-    def test_toggle_both(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_toggle_both(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
         resp = client.put(
             "/config/notifications",
@@ -210,9 +167,7 @@ class TestNotificationToggle:
         assert notif["telegram"] is False
         assert notif["email"] is True
 
-    def test_toggle_persists(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_toggle_persists(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
         client.put("/config/notifications", json={"email": True})
         resp = client.get("/config")
@@ -262,9 +217,7 @@ class TestDiskPersistence:
         reloaded = load_project_config(config_file)
         assert reloaded.notifications.email is True
 
-    def test_no_path_does_not_crash(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_no_path_does_not_crash(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
         resp = client.put("/config/provider", json={"default": "codex"})
         assert resp.status_code == 200

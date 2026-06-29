@@ -102,16 +102,12 @@ def _make_client(
 
 
 class TestAuthGuard:
-    def test_gauges_rejected_unauthenticated(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_gauges_rejected_unauthenticated(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monitor = _make_monitor()
         client = _make_client(monkeypatch, monitor, authed=False)
         assert client.get("/usage/gauges").status_code == 401
 
-    def test_override_rejected_unauthenticated(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_override_rejected_unauthenticated(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monitor = _make_monitor()
         client = _make_client(monkeypatch, monitor, authed=False)
         resp = client.post("/usage/override", json={"active": True})
@@ -119,9 +115,7 @@ class TestAuthGuard:
 
 
 class TestGetGauges:
-    def test_returns_meters_with_governing_flag(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_returns_meters_with_governing_flag(self, monkeypatch: pytest.MonkeyPatch) -> None:
         state = _make_monitor_state()
         monitor = _make_monitor(state)
         client = _make_client(monkeypatch, monitor)
@@ -136,9 +130,7 @@ class TestGetGauges:
         assert len(governing_meters) == 1
         assert governing_meters[0]["kind"] == MeterKind.SEVEN_DAY
 
-    def test_includes_threshold_percent(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_includes_threshold_percent(self, monkeypatch: pytest.MonkeyPatch) -> None:
         state = _make_monitor_state()
         monitor = _make_monitor(state)
         client = _make_client(monkeypatch, monitor)
@@ -147,9 +139,7 @@ class TestGetGauges:
         data = resp.json()
         assert data["threshold_percent"] == 80
 
-    def test_threshold_reached_flag(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_threshold_reached_flag(self, monkeypatch: pytest.MonkeyPatch) -> None:
         state = _make_monitor_state(threshold_reached=True)
         monitor = _make_monitor(state)
         client = _make_client(monkeypatch, monitor)
@@ -157,9 +147,7 @@ class TestGetGauges:
         resp = client.get("/usage/gauges")
         assert resp.json()["threshold_reached"] is True
 
-    def test_override_reflected(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_override_reflected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         state = _make_monitor_state(override_active=True)
         monitor = _make_monitor(state)
         client = _make_client(monkeypatch, monitor)
@@ -177,9 +165,7 @@ class TestGetGauges:
         assert data["meters"] == []
         assert data["override_active"] is False
 
-    def test_meter_fields_present(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_meter_fields_present(self, monkeypatch: pytest.MonkeyPatch) -> None:
         state = _make_monitor_state()
         monitor = _make_monitor(state)
         client = _make_client(monkeypatch, monitor)
@@ -193,9 +179,7 @@ class TestGetGauges:
 
 
 class TestOverrideToggle:
-    def test_activate_override(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_activate_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monitor = _make_monitor()
         policy = monitor.policy
         client = _make_client(monkeypatch, monitor, policy)
@@ -207,9 +191,7 @@ class TestOverrideToggle:
         assert resp.json()["override_active"] is True
         assert policy.override_active is True
 
-    def test_deactivate_override(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_deactivate_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monitor = _make_monitor()
         policy = monitor.policy
         policy.set_override(True)
@@ -220,9 +202,7 @@ class TestOverrideToggle:
         assert resp.json()["override_active"] is False
         assert policy.override_active is False
 
-    def test_dispatches_to_policy_lever(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_dispatches_to_policy_lever(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monitor = _make_monitor()
         policy = monitor.policy
         client = _make_client(monkeypatch, monitor, policy)
@@ -233,9 +213,7 @@ class TestOverrideToggle:
         client.post("/usage/override", json={"active": False})
         assert policy.override_active is False
 
-    def test_provider_and_plan_in_response(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_provider_and_plan_in_response(self, monkeypatch: pytest.MonkeyPatch) -> None:
         state = _make_monitor_state()
         monitor = _make_monitor(state)
         client = _make_client(monkeypatch, monitor)

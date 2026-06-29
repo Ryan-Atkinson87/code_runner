@@ -129,9 +129,7 @@ def _build_target_properties(issue: Issue) -> dict[str, Any]:
     else:
         props["Milestone"] = {"select": None}
     if issue.labels:
-        props["Labels"] = {
-            "multi_select": [{"name": label} for label in issue.labels]
-        }
+        props["Labels"] = {"multi_select": [{"name": label} for label in issue.labels]}
     else:
         props["Labels"] = {"multi_select": []}
     return props
@@ -155,9 +153,7 @@ def _extract_select_property(properties: dict[str, object], name: str) -> str:
     return ""
 
 
-def _properties_differ(
-    existing: dict[str, object], target: dict[str, Any]
-) -> bool:
+def _properties_differ(existing: dict[str, object], target: dict[str, Any]) -> bool:
     for key, target_val in target.items():
         existing_val = existing.get(key)
         if existing_val is None:
@@ -200,9 +196,7 @@ def _property_matches(existing: object, target: Any) -> bool:
         existing_names = sorted(
             item.get("name", "") for item in existing_ms if isinstance(item, dict)
         )
-        target_names = sorted(
-            item.get("name", "") for item in target_ms if isinstance(item, dict)
-        )
+        target_names = sorted(item.get("name", "") for item in target_ms if isinstance(item, dict))
         return existing_names == target_names
 
     return existing == target

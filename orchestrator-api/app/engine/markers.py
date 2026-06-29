@@ -20,22 +20,26 @@ class WaveStep(StrEnum):
 
 # Steps where dying mid-step means the work is deterministic/idempotent
 # and can be safely resumed by re-running the step (Spec §18.2).
-_RESUMABLE_STEPS: frozenset[WaveStep] = frozenset({
-    WaveStep.DEPENDENCY_CHECK,
-    WaveStep.BRANCH_CREATED,
-    WaveStep.TEST_GATE,
-    WaveStep.CONTRACT_VERIFY,
-    WaveStep.INTERNAL_PR,
-    WaveStep.REVIEW,
-    WaveStep.MERGED,
-    WaveStep.SYNCED,
-})
+_RESUMABLE_STEPS: frozenset[WaveStep] = frozenset(
+    {
+        WaveStep.DEPENDENCY_CHECK,
+        WaveStep.BRANCH_CREATED,
+        WaveStep.TEST_GATE,
+        WaveStep.CONTRACT_VERIFY,
+        WaveStep.INTERNAL_PR,
+        WaveStep.REVIEW,
+        WaveStep.MERGED,
+        WaveStep.SYNCED,
+    }
+)
 
 # Steps where dying mid-step means partial/untrusted state exists
 # and the issue must be discarded and restarted (Spec §18.4).
-_RESET_STEPS: frozenset[WaveStep] = frozenset({
-    WaveStep.IMPLEMENTING,
-})
+_RESET_STEPS: frozenset[WaveStep] = frozenset(
+    {
+        WaveStep.IMPLEMENTING,
+    }
+)
 
 
 class RecoveryAction(StrEnum):
@@ -120,10 +124,7 @@ class IssueMarker:
                WHERE run_id = ?""",
             (run_id,),
         ).fetchall()
-        return {
-            int(r[0]): (WaveStep(r[1]), int(r[2]))
-            for r in rows
-        }
+        return {int(r[0]): (WaveStep(r[1]), int(r[2])) for r in rows}
 
     def clear(self, run_id: int, issue_number: int) -> None:
         self._conn.execute(
@@ -132,9 +133,7 @@ class IssueMarker:
         )
         self._conn.commit()
 
-    def increment_checkpoint(
-        self, run_id: int, issue_number: int
-    ) -> int:
+    def increment_checkpoint(self, run_id: int, issue_number: int) -> int:
         """Increment and return the new checkpoint count."""
         self._conn.execute(
             """UPDATE issue_markers

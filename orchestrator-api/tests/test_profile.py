@@ -68,7 +68,9 @@ class TestTriveShape:
         path.write_text(TRIVE_YAML)
         profile = load_execution_profile(path)
         assert set(profile.qa_specialities) == {
-            "accessibility", "responsiveness", "ui-ux",
+            "accessibility",
+            "responsiveness",
+            "ui-ux",
         }
 
     def test_trive_routing(self, tmp_path: Path) -> None:

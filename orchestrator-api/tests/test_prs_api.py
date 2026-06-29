@@ -67,9 +67,7 @@ def _make_github(
         client.list_pull_requests.side_effect = GitHubError(
             "API rate limit exceeded", status_code=403
         )
-        client.get_pull_request.side_effect = GitHubError(
-            "Not found", status_code=404
-        )
+        client.get_pull_request.side_effect = GitHubError("Not found", status_code=404)
     else:
         pr_list = prs if prs is not None else _SAMPLE_PRS
         client.list_pull_requests.return_value = pr_list
@@ -102,23 +100,17 @@ def _make_client(
 
 
 class TestAuthGuard:
-    def test_list_rejected_unauthenticated(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_list_rejected_unauthenticated(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch, _make_github(), authed=False)
         assert client.get("/prs").status_code == 401
 
-    def test_get_rejected_unauthenticated(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_get_rejected_unauthenticated(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch, _make_github(), authed=False)
         assert client.get("/prs/100").status_code == 401
 
 
 class TestListPRs:
-    def test_returns_prs_with_body(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_returns_prs_with_body(self, monkeypatch: pytest.MonkeyPatch) -> None:
         github = _make_github()
         client = _make_client(monkeypatch, github)
 
@@ -131,9 +123,7 @@ class TestListPRs:
         assert pr["title"] == "Wave: P3 – Services"
         assert "## Summary" in pr["body"]
 
-    def test_checklist_extracted(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_checklist_extracted(self, monkeypatch: pytest.MonkeyPatch) -> None:
         github = _make_github()
         client = _make_client(monkeypatch, github)
 
@@ -149,9 +139,7 @@ class TestListPRs:
         assert engine_checks[0]["text"] == "Tests pass"
         assert human_checks[0]["text"] == "Review security implications"
 
-    def test_empty_pr_list(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_empty_pr_list(self, monkeypatch: pytest.MonkeyPatch) -> None:
         github = _make_github(prs=[])
         client = _make_client(monkeypatch, github)
 
@@ -159,9 +147,7 @@ class TestListPRs:
         assert resp.status_code == 200
         assert resp.json()["prs"] == []
 
-    def test_filters_by_head_branch(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_filters_by_head_branch(self, monkeypatch: pytest.MonkeyPatch) -> None:
         github = _make_github()
         client = _make_client(monkeypatch, github)
 
@@ -170,9 +156,7 @@ class TestListPRs:
             "test-repo", state="open", head="code-runner/p3-services"
         )
 
-    def test_github_error_returns_502(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_github_error_returns_502(self, monkeypatch: pytest.MonkeyPatch) -> None:
         github = _make_github(error=True)
         client = _make_client(monkeypatch, github)
 
@@ -181,9 +165,7 @@ class TestListPRs:
 
 
 class TestGetPR:
-    def test_returns_single_pr(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_returns_single_pr(self, monkeypatch: pytest.MonkeyPatch) -> None:
         github = _make_github()
         client = _make_client(monkeypatch, github)
 
@@ -193,9 +175,7 @@ class TestGetPR:
         assert data["number"] == 100
         assert data["html_url"] == "https://github.com/org/repo/pull/100"
 
-    def test_github_error_returns_502(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_github_error_returns_502(self, monkeypatch: pytest.MonkeyPatch) -> None:
         github = _make_github(error=True)
         client = _make_client(monkeypatch, github)
 

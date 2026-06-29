@@ -141,9 +141,7 @@ class TestBuildTargetProperties:
     def test_closed_issue(self) -> None:
         props = _build_target_properties(ISSUES[1])
         assert props["Status"] == {"select": {"name": "Closed"}}
-        assert props["Labels"] == {
-            "multi_select": [{"name": "bug"}, {"name": "chore"}]
-        }
+        assert props["Labels"] == {"multi_select": [{"name": "bug"}, {"name": "chore"}]}
 
     def test_issue_no_milestone(self) -> None:
         issue = Issue(number=3, title="No ms", body="", state="open", repo="r")
@@ -152,7 +150,11 @@ class TestBuildTargetProperties:
 
     def test_issue_no_labels(self) -> None:
         issue = Issue(
-            number=4, title="No labels", body="", state="open", repo="r",
+            number=4,
+            title="No labels",
+            body="",
+            state="open",
+            repo="r",
             milestone=MILESTONE,
         )
         props = _build_target_properties(issue)
@@ -217,7 +219,7 @@ class TestFirstSync:
         github.list_milestones.return_value = [MILESTONE]
         github.list_issues.side_effect = [
             ISSUES,  # open
-            [],      # closed
+            [],  # closed
         ]
 
         notion = MagicMock(spec=NotionClient)
@@ -241,19 +243,27 @@ class TestConvergenceResync:
         github.list_milestones.return_value = [MILESTONE]
         github.list_issues.side_effect = [
             ISSUES,  # open
-            [],      # closed
+            [],  # closed
         ]
 
         existing_rows = [
             _notion_row(
-                "row-1", 1, "code_runner",
-                title="First issue", status="Open",
-                milestone="Phase 1", labels=["enhancement"],
+                "row-1",
+                1,
+                "code_runner",
+                title="First issue",
+                status="Open",
+                milestone="Phase 1",
+                labels=["enhancement"],
             ),
             _notion_row(
-                "row-2", 2, "code_runner",
-                title="Second issue", status="Closed",
-                milestone="Phase 1", labels=["bug", "chore"],
+                "row-2",
+                2,
+                "code_runner",
+                title="Second issue",
+                status="Closed",
+                milestone="Phase 1",
+                labels=["bug", "chore"],
             ),
         ]
 
@@ -276,19 +286,27 @@ class TestConvergenceResync:
         github.list_milestones.return_value = [MILESTONE]
         github.list_issues.side_effect = [
             ISSUES,  # open
-            [],      # closed
+            [],  # closed
         ]
 
         existing_rows = [
             _notion_row(
-                "row-1", 1, "code_runner",
-                title="First issue", status="Closed",
-                milestone="Phase 1", labels=["enhancement"],
+                "row-1",
+                1,
+                "code_runner",
+                title="First issue",
+                status="Closed",
+                milestone="Phase 1",
+                labels=["enhancement"],
             ),
             _notion_row(
-                "row-2", 2, "code_runner",
-                title="Second issue", status="Closed",
-                milestone="Phase 1", labels=["bug", "chore"],
+                "row-2",
+                2,
+                "code_runner",
+                title="Second issue",
+                status="Closed",
+                milestone="Phase 1",
+                labels=["bug", "chore"],
             ),
         ]
 
@@ -312,7 +330,7 @@ class TestPartialFailureRecovery:
         github.list_milestones.return_value = [MILESTONE]
         github.list_issues.side_effect = [
             ISSUES,  # open
-            [],      # closed
+            [],  # closed
         ]
 
         notion = MagicMock(spec=NotionClient)
@@ -336,13 +354,17 @@ class TestPartialFailureRecovery:
         github.list_milestones.return_value = [MILESTONE]
         github.list_issues.side_effect = [
             ISSUES,  # open
-            [],      # closed
+            [],  # closed
         ]
 
         row_2 = _notion_row(
-            "row-2", 2, "code_runner",
-            title="Second issue", status="Closed",
-            milestone="Phase 1", labels=["bug", "chore"],
+            "row-2",
+            2,
+            "code_runner",
+            title="Second issue",
+            status="Closed",
+            milestone="Phase 1",
+            labels=["bug", "chore"],
         )
 
         notion = MagicMock(spec=NotionClient)
@@ -363,12 +385,20 @@ class TestMultiRepo:
         milestone_a = Milestone(number=1, title="Phase 1", state="open")
         milestone_b = Milestone(number=2, title="Phase 1", state="open")
         issue_a = Issue(
-            number=1, title="Backend task", body="", state="open",
-            repo="backend", milestone=milestone_a,
+            number=1,
+            title="Backend task",
+            body="",
+            state="open",
+            repo="backend",
+            milestone=milestone_a,
         )
         issue_b = Issue(
-            number=1, title="Frontend task", body="", state="open",
-            repo="frontend", milestone=milestone_b,
+            number=1,
+            title="Frontend task",
+            body="",
+            state="open",
+            repo="frontend",
+            milestone=milestone_b,
         )
 
         github = MagicMock(spec=GitHubClient)
@@ -378,9 +408,9 @@ class TestMultiRepo:
         ]
         github.list_issues.side_effect = [
             [issue_a],  # backend open
-            [],          # backend closed
+            [],  # backend closed
             [issue_b],  # frontend open
-            [],          # frontend closed
+            [],  # frontend closed
         ]
 
         notion = MagicMock(spec=NotionClient)
@@ -395,9 +425,7 @@ class TestMultiRepo:
         assert result.created == 2
         assert result.ok
         calls = notion.create_database_row.call_args_list
-        repos_synced = [
-            call.args[1]["Repo"]["select"]["name"] for call in calls
-        ]
+        repos_synced = [call.args[1]["Repo"]["select"]["name"] for call in calls]
         assert "backend" in repos_synced
         assert "frontend" in repos_synced
 

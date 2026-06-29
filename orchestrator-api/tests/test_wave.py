@@ -101,7 +101,10 @@ class TestTopologicalSort:
             WaveIssue(number=2, title="B", repo="r", depends_on=[1]),
             WaveIssue(number=3, title="C", repo="r", depends_on=[1]),
             WaveIssue(
-                number=4, title="D", repo="r", depends_on=[2, 3],
+                number=4,
+                title="D",
+                repo="r",
+                depends_on=[2, 3],
             ),
         ]
         ordered = topological_sort(issues)
@@ -114,7 +117,10 @@ class TestTopologicalSort:
     def test_external_dependency_ignored(self) -> None:
         issues = [
             WaveIssue(
-                number=10, title="X", repo="r", depends_on=[99],
+                number=10,
+                title="X",
+                repo="r",
+                depends_on=[99],
             ),
         ]
         ordered = topological_sort(issues)
@@ -154,7 +160,10 @@ class TestCrossRepo:
         issues = [
             WaveIssue(number=1, title="Backend", repo="api"),
             WaveIssue(
-                number=2, title="Frontend", repo="ui", depends_on=[1],
+                number=2,
+                title="Frontend",
+                repo="ui",
+                depends_on=[1],
             ),
         ]
         ordered = topological_sort(issues)

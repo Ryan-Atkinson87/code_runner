@@ -9,9 +9,7 @@ from app.auth.dependencies import require_auth
 from app.blockers.models import Blocker
 from app.blockers.store import BlockerStore, BlockerStoreError
 
-router = APIRouter(
-    prefix="/blockers", tags=["blockers"], dependencies=[Depends(require_auth)]
-)
+router = APIRouter(prefix="/blockers", tags=["blockers"], dependencies=[Depends(require_auth)])
 
 _store: BlockerStore | None = None
 
@@ -100,15 +98,11 @@ async def list_blockers() -> BlockerListResponse:
     "/{issue_number}/resolve",
     response_model=BlockerResponse,
 )
-async def resolve_blocker(
-    issue_number: int, body: ResolveRequest
-) -> BlockerResponse:
+async def resolve_blocker(issue_number: int, body: ResolveRequest) -> BlockerResponse:
     store = _get_store()
     run_id = _get_run_id()
     try:
-        resolved = store.resolve(
-            run_id, issue_number, resolution_response=body.response
-        )
+        resolved = store.resolve(run_id, issue_number, resolution_response=body.response)
     except BlockerStoreError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

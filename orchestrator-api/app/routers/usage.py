@@ -86,16 +86,12 @@ async def get_gauges() -> UsageGaugesResponse:
         for m in state.snapshot.meters
     ]
 
-    threshold_reached = (
-        state.threshold.reached if state.threshold is not None else False
-    )
+    threshold_reached = state.threshold.reached if state.threshold is not None else False
 
     return UsageGaugesResponse(
         meters=meters,
         threshold_percent=(
-            state.threshold.threshold_percent
-            if state.threshold is not None
-            else 80
+            state.threshold.threshold_percent if state.threshold is not None else 80
         ),
         threshold_reached=threshold_reached,
         override_active=state.policy_state.override_active,

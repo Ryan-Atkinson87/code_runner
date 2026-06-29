@@ -118,9 +118,7 @@ class TestResumeAction:
         assert action.strategy == ResumeStrategy.PROBE_WITH_BACKOFF
         assert action.wait_seconds == 300.0
 
-    def test_not_paused_returns_none(
-        self, manager: UsagePauseManager, run_id: int
-    ) -> None:
+    def test_not_paused_returns_none(self, manager: UsagePauseManager, run_id: int) -> None:
         backoff = BackoffState()
         action = manager.next_resume_action(run_id, backoff)
         assert action is None
@@ -175,16 +173,12 @@ class TestWaitForResume:
         adapter.run_session.assert_not_called()
 
     @pytest.mark.anyio
-    async def test_probe_success_resumes(
-        self, manager: UsagePauseManager, run_id: int
-    ) -> None:
+    async def test_probe_success_resumes(self, manager: UsagePauseManager, run_id: int) -> None:
         meter = Meter(kind=MeterKind.FIVE_HOUR, utilisation=85.0)
         manager.set_paused(run_id, meter)
 
         adapter = AsyncMock()
-        adapter.run_session.return_value = SessionResult(
-            outcome=SessionOutcome.COMPLETED
-        )
+        adapter.run_session.return_value = SessionResult(outcome=SessionOutcome.COMPLETED)
 
         await wait_for_resume(
             manager,
@@ -206,9 +200,7 @@ class TestWaitForResume:
         manager.set_paused(run_id, meter)
 
         adapter = AsyncMock()
-        adapter.run_session.return_value = SessionResult(
-            outcome=SessionOutcome.COMPLETED
-        )
+        adapter.run_session.return_value = SessionResult(outcome=SessionOutcome.COMPLETED)
 
         await wait_for_resume(
             manager,

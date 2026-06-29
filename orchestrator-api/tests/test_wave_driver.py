@@ -438,9 +438,7 @@ class TestWaveHumanGate:
 
 class TestSocialContextWiring:
     @pytest.mark.asyncio
-    async def test_social_context_updater_called_after_handoff(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_social_context_updater_called_after_handoff(self, tmp_path: Path) -> None:
         repo_path = _init_repo(tmp_path)
         conn = _init_db()
 
@@ -490,9 +488,7 @@ class TestSocialContextWiring:
         from app.sync.social_context import SocialContextResult
 
         mock_updater = MagicMock()
-        mock_updater.update = MagicMock(
-            return_value=SocialContextResult(success=True)
-        )
+        mock_updater.update = MagicMock(return_value=SocialContextResult(success=True))
 
         with (
             patch("app.engine.implement_loop.run_gates", side_effect=mock_run_gates),
@@ -530,9 +526,7 @@ class TestSocialContextWiring:
         mock_updater.update.assert_called_once_with("wave-1")
 
     @pytest.mark.asyncio
-    async def test_social_context_failure_does_not_fail_handoff(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_social_context_failure_does_not_fail_handoff(self, tmp_path: Path) -> None:
         repo_path = _init_repo(tmp_path)
         conn = _init_db()
 
@@ -583,9 +577,7 @@ class TestSocialContextWiring:
 
         mock_updater = MagicMock()
         mock_updater.update = MagicMock(
-            return_value=SocialContextResult(
-                success=False, error="Notion 429"
-            )
+            return_value=SocialContextResult(success=False, error="Notion 429")
         )
 
         with (
@@ -626,9 +618,7 @@ class TestSocialContextWiring:
         mock_updater.update.assert_called_once_with("wave-1")
 
     @pytest.mark.asyncio
-    async def test_social_context_error_does_not_fail_wave(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_social_context_error_does_not_fail_wave(self, tmp_path: Path) -> None:
         repo_path = _init_repo(tmp_path)
         conn = _init_db()
 

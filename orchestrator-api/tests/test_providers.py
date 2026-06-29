@@ -69,14 +69,16 @@ class TestFakeAdapterSatisfiesInterface:
         import asyncio
 
         adapter = FakeAdapter()
-        result = asyncio.run(adapter.run_session(
-            workdir=tmp_path,
-            role=SessionRole.IMPLEMENTOR,
-            model="fake-model",
-            allowed_tools=["Read", "Write"],
-            prompt="Fix the bug",
-            context_files=[tmp_path / "issue.md"],
-        ))
+        result = asyncio.run(
+            adapter.run_session(
+                workdir=tmp_path,
+                role=SessionRole.IMPLEMENTOR,
+                model="fake-model",
+                allowed_tools=["Read", "Write"],
+                prompt="Fix the bug",
+                context_files=[tmp_path / "issue.md"],
+            )
+        )
         assert result.outcome == SessionOutcome.COMPLETED
         assert len(result.events) == 1
         assert result.events[0].kind == EventKind.OUTPUT

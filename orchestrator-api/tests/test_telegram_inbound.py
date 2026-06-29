@@ -183,26 +183,20 @@ class TestCommandResume:
 
 
 class TestCommandOverride:
-    def test_toggle_on(
-        self, router: CommandRouter, usage_policy: UsagePolicy
-    ) -> None:
+    def test_toggle_on(self, router: CommandRouter, usage_policy: UsagePolicy) -> None:
         result = router.handle("override usage", run_id=1)
         assert result.command == CommandKind.OVERRIDE_USAGE
         assert result.success
         assert "activated" in result.reply
         assert usage_policy.override_active
 
-    def test_toggle_off(
-        self, router: CommandRouter, usage_policy: UsagePolicy
-    ) -> None:
+    def test_toggle_off(self, router: CommandRouter, usage_policy: UsagePolicy) -> None:
         usage_policy.set_override(True)
         result = router.handle("override usage", run_id=1)
         assert "deactivated" in result.reply
         assert not usage_policy.override_active
 
-    def test_works_without_run(
-        self, router: CommandRouter, usage_policy: UsagePolicy
-    ) -> None:
+    def test_works_without_run(self, router: CommandRouter, usage_policy: UsagePolicy) -> None:
         result = router.handle("override usage", run_id=None)
         assert result.success
         assert usage_policy.override_active

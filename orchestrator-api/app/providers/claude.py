@@ -330,15 +330,11 @@ async def _derive_artifacts(repo: GitRepo, head_before: str) -> list[str]:
 
     head_now = repo.rev_parse("HEAD")
     if head_now != head_before:
-        result = await asyncio.to_thread(
-            run, ["git", "diff", "--name-only", head_before, head_now]
-        )
+        result = await asyncio.to_thread(run, ["git", "diff", "--name-only", head_before, head_now])
         if result.stdout.strip():
             changed.update(result.stdout.strip().split("\n"))
 
-    result = await asyncio.to_thread(
-        run, ["git", "ls-files", "--others", "--exclude-standard"]
-    )
+    result = await asyncio.to_thread(run, ["git", "ls-files", "--others", "--exclude-standard"])
     if result.stdout.strip():
         changed.update(result.stdout.strip().split("\n"))
 

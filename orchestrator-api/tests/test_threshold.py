@@ -98,9 +98,7 @@ class TestHumanReserveMeter:
         assert result == MeterKind.AGENT_SDK_CREDIT
 
     def test_exactly_at_cutover(self) -> None:
-        snap = _snapshot(
-            [Meter(kind=MeterKind.AGENT_SDK_CREDIT, utilisation=10.0)]
-        )
+        snap = _snapshot([Meter(kind=MeterKind.AGENT_SDK_CREDIT, utilisation=10.0)])
         result = human_reserve_meter(snap, now=_SDK_CREDIT_CUTOVER)
         assert result == MeterKind.AGENT_SDK_CREDIT
 

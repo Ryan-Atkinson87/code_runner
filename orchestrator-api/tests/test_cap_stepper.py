@@ -101,9 +101,7 @@ class TestApplyCapStep:
 
     def test_empty_snapshot_no_change(self) -> None:
         scheduler = WaveScheduler(cap=3)
-        snap = UsageSnapshot(
-            meters=[], provider="claude", plan="pro", timestamp=1.0
-        )
+        snap = UsageSnapshot(meters=[], provider="claude", plan="pro", timestamp=1.0)
         result = apply_cap_step(scheduler, snap)
         assert result.new_cap == 3
         assert result.paused is False

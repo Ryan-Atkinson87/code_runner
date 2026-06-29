@@ -164,9 +164,7 @@ class CommandRouter:
             success=True,
         )
 
-    def _handle_blocker_response(
-        self, text: str, run_id: int | None
-    ) -> CommandResult:
+    def _handle_blocker_response(self, text: str, run_id: int | None) -> CommandResult:
         if run_id is None:
             return CommandResult(
                 command=CommandKind.BLOCKER_RESPONSE,
@@ -191,9 +189,7 @@ class CommandRouter:
         response_text = parts[2]
 
         try:
-            self._blockers.resolve(
-                run_id, issue_number, resolution_response=response_text
-            )
+            self._blockers.resolve(run_id, issue_number, resolution_response=response_text)
         except BlockerStoreError:
             return CommandResult(
                 command=CommandKind.BLOCKER_RESPONSE,
@@ -203,9 +199,6 @@ class CommandRouter:
 
         return CommandResult(
             command=CommandKind.BLOCKER_RESPONSE,
-            reply=(
-                f"Blocker for #{issue_number} resolved.\n"
-                f"Response recorded: {response_text}"
-            ),
+            reply=(f"Blocker for #{issue_number} resolved.\nResponse recorded: {response_text}"),
             success=True,
         )

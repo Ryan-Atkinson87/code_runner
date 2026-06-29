@@ -9,9 +9,7 @@ from app.auth.dependencies import require_auth
 from app.github.client import GitHubClient
 from app.github.errors import GitHubError
 
-router = APIRouter(
-    prefix="/prs", tags=["prs"], dependencies=[Depends(require_auth)]
-)
+router = APIRouter(prefix="/prs", tags=["prs"], dependencies=[Depends(require_auth)])
 
 _github_client: GitHubClient | None = None
 _repo_name: str = ""
@@ -64,9 +62,7 @@ def _extract_checklist(body: str) -> list[ChecklistItem]:
 async def list_prs(head: str | None = None) -> PRListResponse:
     client = _get_client()
     try:
-        prs = client.list_pull_requests(
-            _repo_name, state="open", head=head
-        )
+        prs = client.list_pull_requests(_repo_name, state="open", head=head)
     except GitHubError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

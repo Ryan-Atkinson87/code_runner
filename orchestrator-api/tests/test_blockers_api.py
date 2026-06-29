@@ -103,9 +103,7 @@ class TestAuthGuard:
         self, monkeypatch: pytest.MonkeyPatch, blocker_store: BlockerStore
     ) -> None:
         client = _make_client(monkeypatch, blocker_store, authed=False)
-        resp = client.post(
-            "/blockers/10/resolve", json={"response": "fixed"}
-        )
+        resp = client.post("/blockers/10/resolve", json={"response": "fixed"})
         assert resp.status_code == 401
 
 
@@ -187,9 +185,7 @@ class TestResolveBlocker:
         _seed_blockers(blocker_store)
         client = _make_client(monkeypatch, blocker_store)
 
-        client.post(
-            "/blockers/10/resolve", json={"response": "resolved via API"}
-        )
+        client.post("/blockers/10/resolve", json={"response": "resolved via API"})
 
         parked = blocker_store.list_parked(_RUN_ID)
         assert len(parked) == 1
@@ -199,9 +195,7 @@ class TestResolveBlocker:
         self, monkeypatch: pytest.MonkeyPatch, blocker_store: BlockerStore
     ) -> None:
         client = _make_client(monkeypatch, blocker_store)
-        resp = client.post(
-            "/blockers/999/resolve", json={"response": "test"}
-        )
+        resp = client.post("/blockers/999/resolve", json={"response": "test"})
         assert resp.status_code == 404
 
     def test_resolve_requires_response_text(
@@ -216,7 +210,5 @@ class TestResolveBlocker:
         self, monkeypatch: pytest.MonkeyPatch, blocker_store: BlockerStore
     ) -> None:
         client = _make_client(monkeypatch, blocker_store, run_id=None)
-        resp = client.post(
-            "/blockers/10/resolve", json={"response": "test"}
-        )
+        resp = client.post("/blockers/10/resolve", json={"response": "test"})
         assert resp.status_code == 404

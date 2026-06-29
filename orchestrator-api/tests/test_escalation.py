@@ -136,9 +136,7 @@ class TestEscalate:
         )
         assert result.blocker.blocker_type == BlockerType.STUCK_AGENT
 
-    def test_notification_body_includes_wave_and_reason(
-        self, blocker_store: BlockerStore
-    ) -> None:
+    def test_notification_body_includes_wave_and_reason(self, blocker_store: BlockerStore) -> None:
         record = _make_blocker_record(issue_number=7, reason="Spec unclear")
         dispatcher = _mock_dispatcher()
 

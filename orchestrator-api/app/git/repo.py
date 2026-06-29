@@ -123,8 +123,7 @@ class GitRepo:
     def is_merged(self, branch: str, into: str) -> bool:
         result = self._run("branch", "--merged", into)
         merged_branches = [
-            line.strip().removeprefix("* ")
-            for line in result.stdout.strip().split("\n")
+            line.strip().removeprefix("* ") for line in result.stdout.strip().split("\n")
         ]
         return branch in merged_branches
 

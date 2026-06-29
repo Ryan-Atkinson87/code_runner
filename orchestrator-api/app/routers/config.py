@@ -14,9 +14,7 @@ from app.config.schema import (
     ProviderSection,
 )
 
-router = APIRouter(
-    prefix="/config", tags=["config"], dependencies=[Depends(require_auth)]
-)
+router = APIRouter(prefix="/config", tags=["config"], dependencies=[Depends(require_auth)])
 
 _config: ProjectConfig | None = None
 _config_path: str = ""
