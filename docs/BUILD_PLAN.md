@@ -203,8 +203,8 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [x] #46 — Layer 1 raw event capture: compressed per-session structured event stream _(deps: #16, #3)_
 - [x] #47 — Langfuse trace emission: each AI session as a Layer 2 trace _(deps: #46, #17, #7)_
 - [x] #48 — Efficiency rollups in SQLite: per issue/role/skill/wave/month aggregation _(deps: #46, #3)_
-- [ ] #49 — Storage cap and tiered retention pruning (~50GB; raw 90d / traces 180d / rollups indefinite) _(deps: #46, #47)_
-- [ ] #50 — Efficiency report generator: on-demand/per-wave/per-month + regression + suggestions _(deps: #48, #47)_
+- [x] #49 — Storage cap and tiered retention pruning (~50GB; raw 90d / traces 180d / rollups indefinite) _(deps: #46, #47)_
+- [x] #50 — Efficiency report generator: on-demand/per-wave/per-month + regression + suggestions _(deps: #48, #47)_
 - [x] #51 — Run-control API: project/wave/provider selection + start/stop/pause/resume _(deps: #29, #2, #6)_
 - [x] #52 — Live-progress SSE endpoint: normalised event stream _(deps: #46, #16, #6)_
 - [x] #53 — Usage-gauges API: meters, governing meter, 80% line, override switch _(deps: #33, #36, #2)_
@@ -225,6 +225,8 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [ ] #68 — Profile-generation screen: trigger session, review proposed profile, confirm before write _(deps: #60, #58)_
 - [x] #121 — Enable pyright type-checking on test files _(chore)_
 - [x] #123 — Replace lstrip with removeprefix in is_merged _(chore)_
+- [x] #152 — Document Phase 6 API contracts in docs/api.md _(docs)_
+- [x] #178 — Update root README.md to reflect orchestrator-ui scaffold _(chore)_
 
 **Workable now (Phase-1/2/3/4/5 deps permitting):** #46 first (needs #16, #3). After #46: #47,
 #48 (parallel); then #49 (needs #46, #47) and #50 (needs #48, #47). The API issues unblock as
