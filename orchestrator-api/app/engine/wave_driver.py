@@ -25,6 +25,8 @@ from app.github.models import PullRequest
 from app.handoff.engine import HandoffEngine
 from app.handoff.models import HandoffInput, IssueNote, ParkedBlocker
 from app.notifications.dispatcher import Dispatcher
+from app.observability.capture import EventCaptureWriter
+from app.observability.langfuse_emitter import LangfuseEmitter
 from app.personas.models import Overlay, PersonaType
 from app.profile.schema import ExecutionProfile
 from app.providers.adapter import ProviderAdapter
@@ -75,6 +77,8 @@ async def run_wave(
     blocker_store: BlockerStore | None = None,
     dispatcher: Dispatcher | None = None,
     social_context_updater: SocialContextUpdater | None = None,
+    capture_writer: EventCaptureWriter | None = None,
+    langfuse_emitter: LangfuseEmitter | None = None,
 ) -> WaveResult:
     """Drive the full wave loop (Spec §4.2).
 
@@ -156,6 +160,9 @@ async def run_wave(
             run_id=run_id,
             model=model,
             allowed_tools=allowed_tools,
+            wave_name=wave_name,
+            capture_writer=capture_writer,
+            langfuse_emitter=langfuse_emitter,
             test_fix_attempts=project_config.limits.test_fix_attempts,
         )
 
@@ -194,6 +201,9 @@ async def run_wave(
             run_id=run_id,
             model=model,
             allowed_tools=allowed_tools,
+            wave_name=wave_name,
+            capture_writer=capture_writer,
+            langfuse_emitter=langfuse_emitter,
             review_cycles=project_config.limits.review_cycles,
         )
 

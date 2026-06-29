@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 
+from app.engine.implement_loop import _record_session
 from app.engine.markers import IssueMarker, WaveStep
 from app.git.feature_branch import FeatureBranch
 from app.git.merge_queue import MergeQueue
+from app.observability.capture import EventCaptureWriter
+from app.observability.langfuse_emitter import LangfuseEmitter
 from app.providers.adapter import ProviderAdapter
 from app.providers.types import SessionResult, SessionRole
 from app.renderer.base import RenderedOutput
@@ -39,6 +44,9 @@ async def review_and_merge(
     run_id: int,
     model: str,
     allowed_tools: list[str],
+    wave_name: str = "",
+    capture_writer: EventCaptureWriter | None = None,
+    langfuse_emitter: LangfuseEmitter | None = None,
     review_cycles: int = 2,
 ) -> ReviewResult:
     """Run the bounded internal-review cycle for a single issue.
@@ -54,6 +62,7 @@ async def review_and_merge(
 
     marker_store.write(run_id, issue_number, WaveStep.INTERNAL_PR)
 
+    body_started = datetime.now(UTC)
     body_session = await adapter.run_session(
         workdir=repo_path,
         role=SessionRole.IMPLEMENTOR,
@@ -63,6 +72,20 @@ async def review_and_merge(
         context_files=[],
     )
     sessions.append(body_session)
+    _record_session(
+        session=body_session,
+        session_id=uuid.uuid4().hex,
+        run_id=run_id,
+        wave=wave_name,
+        issue_number=issue_number,
+        role=SessionRole.IMPLEMENTOR,
+        skill="body_generation",
+        model=model,
+        started_at=body_started,
+        finished_at=datetime.now(UTC),
+        capture_writer=capture_writer,
+        langfuse_emitter=langfuse_emitter,
+    )
 
     pr_body = _extract_text(body_session)
 
@@ -71,6 +94,7 @@ async def review_and_merge(
     while True:
         marker_store.write(run_id, issue_number, WaveStep.REVIEW)
 
+        review_started = datetime.now(UTC)
         review_session = await adapter.run_session(
             workdir=repo_path,
             role=SessionRole.ORCHESTRATOR,
@@ -80,6 +104,20 @@ async def review_and_merge(
             context_files=[],
         )
         sessions.append(review_session)
+        _record_session(
+            session=review_session,
+            session_id=uuid.uuid4().hex,
+            run_id=run_id,
+            wave=wave_name,
+            issue_number=issue_number,
+            role=SessionRole.ORCHESTRATOR,
+            skill="review",
+            model=model,
+            started_at=review_started,
+            finished_at=datetime.now(UTC),
+            capture_writer=capture_writer,
+            langfuse_emitter=langfuse_emitter,
+        )
 
         review_text = _extract_text(review_session)
 
@@ -106,6 +144,7 @@ async def review_and_merge(
 
         marker_store.write(run_id, issue_number, WaveStep.IMPLEMENTING)
 
+        feedback_started = datetime.now(UTC)
         feedback_session = await adapter.run_session(
             workdir=repo_path,
             role=SessionRole.IMPLEMENTOR,
@@ -115,6 +154,20 @@ async def review_and_merge(
             context_files=[],
         )
         sessions.append(feedback_session)
+        _record_session(
+            session=feedback_session,
+            session_id=uuid.uuid4().hex,
+            run_id=run_id,
+            wave=wave_name,
+            issue_number=issue_number,
+            role=SessionRole.IMPLEMENTOR,
+            skill="implement_feedback",
+            model=model,
+            started_at=feedback_started,
+            finished_at=datetime.now(UTC),
+            capture_writer=capture_writer,
+            langfuse_emitter=langfuse_emitter,
+        )
 
         diff = feature_branch.diff()
         diff_stat = feature_branch.diff_stat()
