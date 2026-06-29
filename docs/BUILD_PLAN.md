@@ -214,7 +214,7 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [x] #57 — Config + notifications API: read/edit project config + channel toggle _(deps: #4, #41, #2)_
 - [x] #58 — Profile-generation API: trigger tech-lead session, propose, human-confirm before write _(deps: #23, #2)_
 - [x] #59 — Scaffold orchestrator-ui (React + Vite + TS; eslint/prettier, vitest, tsc) _(deps: #7, #2)_ — `chore`
-- [ ] #60 — App shell: routing, login + session auth, API/SSE client, baseline UI states _(deps: #59, #6)_
+- [x] #60 — App shell: routing, login + session auth, API/SSE client, baseline UI states _(deps: #59, #6)_
 - [ ] #61 — Run-control screen: select project/wave(s)/provider, start/stop/pause/resume _(deps: #60, #51)_
 - [ ] #62 — Live-progress screen: current wave/issue/role and SSE event stream _(deps: #60, #52)_
 - [ ] #63 — Usage-gauges screen: meters, governing highlighted, 80% line, override switch _(deps: #60, #53)_
