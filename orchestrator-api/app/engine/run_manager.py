@@ -58,7 +58,17 @@ class RunController:
         self._project_name = project_name
         self._repo_name = repo_name
         self._active_task: asyncio.Task[None] | None = None
-        self._active_run_id: int | None = None
+        self._active_run_id: int | None = self._recover_active_run_id()
+
+    def _recover_active_run_id(self) -> int | None:
+        row = self._conn.execute(
+            "SELECT id FROM runs WHERE status IN ('running', 'paused') ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        if row is None:
+            return None
+        run_id: int = row[0]
+        logger.info("Recovered active run %d from DB on startup", run_id)
+        return run_id
 
     @property
     def project_name(self) -> str:

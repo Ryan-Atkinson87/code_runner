@@ -344,3 +344,38 @@ class TestRunController:
         controller.stop_run(state.run_id)
         new_state = controller.start_run("proj", "wave-2", "claude")
         assert new_state.status == RunStatus.RUNNING
+
+    def test_recovers_running_run_on_restart(
+        self, db_conn: sqlite3.Connection
+    ) -> None:
+        original = RunController(conn=db_conn, project_name="proj", repo_name="repo")
+        state = original.start_run("proj", "wave-1", "claude")
+
+        restarted = RunController(conn=db_conn, project_name="proj", repo_name="repo")
+        active = restarted.get_active_run()
+        assert active is not None
+        assert active.run_id == state.run_id
+        assert active.status == RunStatus.RUNNING
+
+    def test_recovers_paused_run_on_restart(
+        self, db_conn: sqlite3.Connection
+    ) -> None:
+        original = RunController(conn=db_conn, project_name="proj", repo_name="repo")
+        state = original.start_run("proj", "wave-1", "claude")
+        original.pause_run(state.run_id)
+
+        restarted = RunController(conn=db_conn, project_name="proj", repo_name="repo")
+        active = restarted.get_active_run()
+        assert active is not None
+        assert active.run_id == state.run_id
+        assert active.status == RunStatus.PAUSED
+
+    def test_no_recovery_when_run_stopped(
+        self, db_conn: sqlite3.Connection
+    ) -> None:
+        original = RunController(conn=db_conn, project_name="proj", repo_name="repo")
+        state = original.start_run("proj", "wave-1", "claude")
+        original.stop_run(state.run_id)
+
+        restarted = RunController(conn=db_conn, project_name="proj", repo_name="repo")
+        assert restarted.get_active_run() is None
