@@ -105,7 +105,7 @@ apply to every skill and every agent persona.
 | Area | Stack | Test | Lint | Typecheck |
 |---|---|---|---|---|
 | Backend (`orchestrator-api`) | Python 3.13, FastAPI, Pydantic, asyncio, SQLite; `uv` for env/deps | `uv run pytest` | `uv run ruff check .` | `uv run pyright` |
-| Frontend (`orchestrator-ui`) | React + Vite | `<FRONTEND_TEST_CMD>` | `<FRONTEND_LINT_CMD>` | `<FRONTEND_TYPECHECK_CMD>` |
+| Frontend (`orchestrator-ui`) | React + Vite | `npm run test` | `npm run lint` | `npm run typecheck` |
 
 Backend toolchain is settled: `uv` (deps + lockfile), `pytest`, `ruff` (lint **and** format —
 `uv run ruff format`), `pyright`. The frontend command placeholders get filled in when the UI
