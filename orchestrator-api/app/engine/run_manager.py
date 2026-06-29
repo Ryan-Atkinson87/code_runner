@@ -25,6 +25,10 @@ class RunControlError(Exception):
     pass
 
 
+class RunNotFoundError(RunControlError):
+    pass
+
+
 @dataclass
 class RunState:
     run_id: int
@@ -185,7 +189,7 @@ class RunController:
     def _require_run(self, run_id: int) -> RunState:
         state = self.get_status(run_id)
         if state is None:
-            raise RunControlError(f"Run {run_id} not found")
+            raise RunNotFoundError(f"Run {run_id} not found")
         return state
 
     def _update_status(self, run_id: int, status: RunStatus) -> None:

@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from app.auth import router as auth_router_mod
 from app.auth.rate_limit import RateLimiter
 from app.auth.sessions import SessionStore
-from app.engine.run_manager import RunControlError, RunController, RunStatus
+from app.engine.run_manager import RunControlError, RunController, RunNotFoundError, RunStatus
 from app.github.models import Milestone
 from app.main import create_app
 from app.settings import Settings
@@ -153,6 +153,10 @@ class TestStartRun:
 
 
 class TestStopRun:
+    def test_not_found_returns_404(self, authed_client: TestClient) -> None:
+        resp = authed_client.post("/runs/999/stop")
+        assert resp.status_code == 404
+
     def test_stops_running(self, authed_client: TestClient) -> None:
         start = authed_client.post("/runs/start", json={"wave": "test"})
         run_id = start.json()["run_id"]
@@ -180,6 +184,10 @@ class TestStopRun:
 
 
 class TestPauseRun:
+    def test_not_found_returns_404(self, authed_client: TestClient) -> None:
+        resp = authed_client.post("/runs/999/pause")
+        assert resp.status_code == 404
+
     def test_pauses_running(self, authed_client: TestClient) -> None:
         start = authed_client.post("/runs/start", json={"wave": "test"})
         run_id = start.json()["run_id"]
@@ -198,6 +206,10 @@ class TestPauseRun:
 
 
 class TestResumeRun:
+    def test_not_found_returns_404(self, authed_client: TestClient) -> None:
+        resp = authed_client.post("/runs/999/resume")
+        assert resp.status_code == 404
+
     def test_resumes_paused(self, authed_client: TestClient) -> None:
         start = authed_client.post("/runs/start", json={"wave": "test"})
         run_id = start.json()["run_id"]
@@ -297,7 +309,7 @@ class TestRunController:
             controller.start_run("proj", "wave-2", "claude")
 
     def test_stop_nonexistent_raises(self, controller: RunController) -> None:
-        with pytest.raises(RunControlError, match="not found"):
+        with pytest.raises(RunNotFoundError, match="not found"):
             controller.stop_run(999)
 
     def test_list_waves(self, controller: RunController, mock_github: MagicMock) -> None:

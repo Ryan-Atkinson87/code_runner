@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.auth.dependencies import require_auth
-from app.engine.run_manager import RunControlError, RunController, RunStatus
+from app.engine.run_manager import RunControlError, RunController, RunNotFoundError, RunStatus
 
 router = APIRouter(prefix="/runs", tags=["runs"], dependencies=[Depends(require_auth)])
 
@@ -107,6 +107,8 @@ async def stop_run(run_id: int) -> RunResponse:
     controller = _get_controller()
     try:
         state = controller.stop_run(run_id)
+    except RunNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except RunControlError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return RunResponse(
@@ -123,6 +125,8 @@ async def pause_run(run_id: int) -> RunResponse:
     controller = _get_controller()
     try:
         state = controller.pause_run(run_id)
+    except RunNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except RunControlError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return RunResponse(
@@ -139,6 +143,8 @@ async def resume_run(run_id: int) -> RunResponse:
     controller = _get_controller()
     try:
         state = controller.resume_run(run_id)
+    except RunNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except RunControlError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return RunResponse(
