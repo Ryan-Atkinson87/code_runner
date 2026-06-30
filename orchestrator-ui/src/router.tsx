@@ -3,6 +3,7 @@ import { AuthProvider } from "./auth/AuthContext";
 import { LoginPage } from "./auth/LoginPage";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { RunControlPage } from "./runs/RunControlPage";
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
               <p className="p-6 text-gray-500">Select a section from the navigation.</p>
             ),
           },
+          { path: "runs", element: <RunControlPage /> },
         ],
       },
     ],
