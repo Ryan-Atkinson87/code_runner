@@ -23,6 +23,8 @@ from app.routers.progress import init_progress_bus
 from app.routers.progress import router as progress_router
 from app.routers.prs import init_prs_deps
 from app.routers.prs import router as prs_router
+from app.routers.reports import init_reports_deps
+from app.routers.reports import router as reports_router
 from app.routers.runs import init_run_controller
 from app.routers.runs import router as runs_router
 from app.routers.usage import init_usage_deps
@@ -36,6 +38,7 @@ if TYPE_CHECKING:
 
     from app.blockers.store import BlockerStore
     from app.engine.profile_generation import ProfileGenerationResult
+    from app.observability.rollup import RollupStore
 
 
 def create_app(
@@ -53,6 +56,7 @@ def create_app(
     profile_generate_fn: Callable[..., Awaitable[ProfileGenerationResult]] | None = None,
     profile_output_path: Path | None = None,
     progress_bus: ProgressBus | None = None,
+    rollup_store: RollupStore | None = None,
 ) -> FastAPI:
     if settings is None:
         settings = Settings()
@@ -84,6 +88,9 @@ def create_app(
     _bus = progress_bus or ProgressBus()
     init_progress_bus(_bus)
 
+    if rollup_store is not None:
+        init_reports_deps(rollup_store)
+
     application = FastAPI(
         title=settings.app_name,
         root_path=settings.root_path,
@@ -98,5 +105,6 @@ def create_app(
     application.include_router(prs_router)
     application.include_router(config_router)
     application.include_router(profile_router)
+    application.include_router(reports_router)
 
     return application
