@@ -215,7 +215,8 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [x] #58 — Profile-generation API: trigger tech-lead session, propose, human-confirm before write _(deps: #23, #2)_
 - [x] #59 — Scaffold orchestrator-ui (React + Vite + TS; eslint/prettier, vitest, tsc) _(deps: #7, #2)_ — `chore`
 - [x] #60 — App shell: routing, login + session auth, API/SSE client, baseline UI states _(deps: #59, #6)_
-- [ ] #61 — Run-control screen: select project/wave(s)/provider, start/stop/pause/resume _(deps: #60, #51)_
+- [x] #61 — Run-control screen: select project/wave(s)/provider, start/stop/pause/resume _(deps: #60, #51)_
+- [ ] #193 — Run-control empty state: add interactive action link when no open waves _(deps: #61, #57)_
 - [ ] #62 — Live-progress screen: current wave/issue/role and SSE event stream _(deps: #60, #52)_
 - [ ] #63 — Usage-gauges screen: meters, governing highlighted, 80% line, override switch _(deps: #60, #53)_
 - [ ] #64 — Blockers screen: live parked-blocker list with inline response _(deps: #60, #54)_
