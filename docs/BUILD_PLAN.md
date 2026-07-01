@@ -228,6 +228,15 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [x] #123 — Replace lstrip with removeprefix in is_merged _(chore)_
 - [x] #152 — Document Phase 6 API contracts in docs/api.md _(docs)_
 - [x] #178 — Update root README.md to reflect orchestrator-ui scaffold _(chore)_
+- [x] #184 — Add VITE_API_BASE_URL to root .env.example _(chore)_
+- [x] #185 — Make EmptyState.action required (dev-mode warning) _(chore)_
+- [x] #186 — [A11y] Layout — skip-to-content link for keyboard users _(a11y)_
+- [x] #187 — [A11y] LoginPage — main landmark _(a11y)_
+- [x] #188 — [A11y] LoginPage + Layout — touch targets ≥44px _(a11y)_
+- [x] #189 — [Responsive] Layout sidebar 375px — hamburger/drawer for mobile _(responsive)_
+- [x] #190 — [Responsive] LoginPage 375px — 16px font prevents iOS auto-zoom _(responsive)_
+- [x] #191 — [Responsive] LoginPage 375px — horizontal margin on mobile _(responsive)_
+- [ ] #193 — Run-control empty state: add interactive action link _(chore)_
 
 **Workable now (Phase-1/2/3/4/5 deps permitting):** #46 first (needs #16, #3). After #46: #47,
 #48 (parallel); then #49 (needs #46, #47) and #50 (needs #48, #47). The API issues unblock as
