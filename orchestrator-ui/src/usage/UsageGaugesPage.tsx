@@ -41,35 +41,36 @@ type PageState =
   | { phase: "loading" }
   | { phase: "empty" }
   | { phase: "error"; message: string }
-  | { phase: "populated"; data: GaugesSnapshot; overriding: boolean };
+  | { phase: "populated"; data: GaugesSnapshot; overriding: boolean; overrideError: string | null };
 
 type PageAction =
   | { type: "loaded"; data: GaugesSnapshot }
   | { type: "load_error"; message: string }
   | { type: "override_start" }
   | { type: "override_done"; override_active: boolean }
-  | { type: "override_error" };
+  | { type: "override_error"; message: string };
 
 function reducer(state: PageState, action: PageAction): PageState {
   switch (action.type) {
     case "loaded":
       if (action.data.meters.length === 0) return { phase: "empty" };
-      return { phase: "populated", data: action.data, overriding: false };
+      return { phase: "populated", data: action.data, overriding: false, overrideError: null };
     case "load_error":
       return { phase: "error", message: action.message };
     case "override_start":
       if (state.phase !== "populated") return state;
-      return { ...state, overriding: true };
+      return { ...state, overriding: true, overrideError: null };
     case "override_done":
       if (state.phase !== "populated") return state;
       return {
         ...state,
         overriding: false,
         data: { ...state.data, override_active: action.override_active },
+        overrideError: null,
       };
     case "override_error":
       if (state.phase !== "populated") return state;
-      return { ...state, overriding: false };
+      return { ...state, overriding: false, overrideError: action.message };
   }
 }
 
@@ -228,8 +229,11 @@ export function UsageGaugesPage() {
     try {
       const res = await apiClient.post<OverrideResponse>("/usage/override", { active: next });
       dispatch({ type: "override_done", override_active: res.override_active });
-    } catch {
-      dispatch({ type: "override_error" });
+    } catch (err) {
+      dispatch({
+        type: "override_error",
+        message: err instanceof ApiError ? err.message : "Failed to toggle override — please try again.",
+      });
     }
   }
 
@@ -250,7 +254,7 @@ export function UsageGaugesPage() {
     );
   }
 
-  const { data, overriding } = state;
+  const { data, overriding, overrideError } = state;
 
   return (
     <PopulatedState className="p-6">
@@ -320,6 +324,11 @@ export function UsageGaugesPage() {
             {data.override_active ? "Override active — threshold gate bypassed" : "Override inactive — threshold gate active"}
           </span>
         </div>
+        {overrideError && (
+          <p role="alert" className="mt-2 text-xs text-red-600">
+            {overrideError}
+          </p>
+        )}
       </section>
     </PopulatedState>
   );
