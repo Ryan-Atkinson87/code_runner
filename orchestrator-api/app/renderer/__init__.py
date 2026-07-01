@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from app.renderer.agents import AgentsRenderer
 from app.renderer.base import InstructionRenderer, RenderedOutput
 from app.renderer.claude import ClaudeRenderer
 from app.renderer.pipeline import compose_and_render
 
 __all__ = [
+    "AgentsRenderer",
     "ClaudeRenderer",
     "InstructionRenderer",
     "RenderedOutput",
@@ -16,6 +18,6 @@ __all__ = [
 def get_renderer(provider: str) -> InstructionRenderer:
     if provider == "claude":
         return ClaudeRenderer()
-    raise NotImplementedError(
-        f"Instruction renderer for provider '{provider}' is not yet implemented (Phase 7)"
-    )
+    if provider in ("codex", "gemini"):
+        return AgentsRenderer(provider)
+    raise NotImplementedError(f"Instruction renderer for provider '{provider}' is not implemented")
