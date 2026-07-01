@@ -218,7 +218,7 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [x] #61 — Run-control screen: select project/wave(s)/provider, start/stop/pause/resume _(deps: #60, #51)_
 - [ ] #193 — Run-control empty state: add interactive action link when no open waves _(deps: #61, #57)_
 - [x] #62 — Live-progress screen: current wave/issue/role and SSE event stream _(deps: #60, #52)_
-- [ ] #63 — Usage-gauges screen: meters, governing highlighted, 80% line, override switch _(deps: #60, #53)_
+- [x] #63 — Usage-gauges screen: meters, governing highlighted, 80% line, override switch _(deps: #60, #53)_
 - [ ] #64 — Blockers screen: live parked-blocker list with inline response _(deps: #60, #54)_
 - [ ] #65 — PRs screen: surface hand-off PRs with bodies and checklists _(deps: #60, #55)_
 - [ ] #66 — Efficiency-reports screen: on-demand/per-wave/per-month views _(deps: #60, #56)_
