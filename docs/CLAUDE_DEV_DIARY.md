@@ -107,3 +107,25 @@ The Specification's sixth principle — human out of the loop until the wave PR 
 The engine now has a complete communication layer: outbound notifications via Telegram and email, inbound commands via Telegram, idempotent Notion sync, and structured blocker escalation with park-and-continue semantics. The test suite grew from 615 to 774 tests, all passing with clean lint and type checks. The human can monitor and control runs from their phone — a qualitative shift from the previous milestone where the engine ran silently.
 
 Phase 6 (Observability + UI) is now unblocked — its dependencies (Phases 3, 4, and 5) are all complete. Phase 6 is the convergence phase: every API endpoint surfaces a capstone from Phases 3–5, and the React frontend wires it all into a single dashboard. The blocker API (#54) will expose the blocker store built here, the config/notifications API (#57) will expose the channel toggles, and the run-control actions will reuse the same engine dispatch points the Telegram two-way channel wired. Phase 7 (Multi-provider) continues in parallel.
+
+---
+
+## Milestone 6: Observability + UI — 2026-07-01
+
+### What was done
+
+Phase 6 was the convergence milestone — every component built in Phases 3–5 gained an API surface and a frontend screen. Three workstreams landed in parallel. The observability backend introduced Layer 1 event capture (compressed per-session structured streams), Langfuse trace emission for every AI session, efficiency rollups in SQLite aggregated per issue, role, skill, wave, and month, a tiered storage cap (~50 GB with raw/trace/rollup retention layers), and an efficiency report generator producing on-demand, per-wave, and per-month views with regression detection and improvement suggestions.
+
+The HTTP/SSE API surface completed the bridge from engine to UI: run control (start/stop/pause/resume with state conflict checking), a live-progress SSE endpoint with keepalive frames and reconnect semantics, usage gauges exposing the governing meter and override switch, blockers CRUD, hand-off PR surfacing with checklist extraction from PR bodies, efficiency reports at all three scopes, config and notification channel read/edit, and a profile-generation API enforcing the human-confirmed-before-write constraint at the API layer. A full API contract was documented in `docs/api.md`.
+
+The React/Vite frontend introduced the app shell (routing, session auth, API/SSE client, baseline loading/empty/error states) and eight screens wiring every API endpoint into a usable dashboard. The milestone also closed out a substantial backlog of accessibility and responsiveness issues: skip-to-content link, WCAG 2.1 AA colour contrast on error text, ≥44 px touch targets, mobile hamburger drawer, iOS-compatible login form, and several screen-specific focus-management and semantic fixes.
+
+### Why it was done
+
+The engine was fully operational after Phase 5 but invisible — there was no dashboard for the human to see what was running, no screen to inspect usage or blockers, no way to view efficiency trends, and no visual confirmation that the hand-off PRs were ready. Phase 6 makes the system usable. The Specification's §12 UI requirements — run control, live progress, usage gauges, blocker list, PR surfacing, efficiency reports, notifications, config view — are all satisfied. The Langfuse layer (Spec §8) gives the human a structured trace per AI session for debugging and cost analysis. The efficiency report generator (Spec §9) closes the feedback loop between build cost and architectural decisions.
+
+### Effect on the project
+
+Code Runner now has a complete, authenticated React dashboard backed by a fully-documented REST/SSE API. The test suite grew from 774 to 1034 backend tests and 139 frontend tests, all passing with clean lint and type checks on both sides. A code-level accessibility audit surfaced three follow-up findings (#219, #220, #222) and one responsiveness pattern (#223) filed to Phase 7 — none were blocking.
+
+Phase 7 (Multi-provider) is the last infrastructure milestone before the first real run. All of Phase 7's architectural dependencies are satisfied: the ProviderAdapter interface exists, the wave-loop driver is in place, the usage monitor can reload meters on provider switch, and the run-control screen already exposes provider selection. Adding Codex and Gemini is now a clean additive change behind the existing interface.
