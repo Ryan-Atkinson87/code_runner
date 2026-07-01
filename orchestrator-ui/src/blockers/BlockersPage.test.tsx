@@ -253,4 +253,45 @@ describe("BlockersPage", () => {
       ).toBeInTheDocument(),
     );
   });
+
+  it("retains textarea text while submission is in flight", async () => {
+    mockGet.mockResolvedValueOnce(BLOCKERS_RESPONSE);
+    // POST never resolves — keeps form in "submitting" state
+    mockPost.mockImplementation(() => new Promise(() => {}));
+    render(<BlockersPage />);
+    await waitFor(() => screen.getByRole("textbox", { name: "Your response" }));
+
+    act(() => {
+      fireEvent.change(screen.getByRole("textbox", { name: "Your response" }), {
+        target: { value: "My answer." },
+      });
+    });
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Send response" }));
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole("textbox", { name: "Your response" })).toBeDisabled(),
+    );
+    expect(screen.getByRole("textbox", { name: "Your response" })).toHaveValue("My answer.");
+  });
+
+  it("retains textarea text after submission failure so user can re-submit", async () => {
+    mockGet.mockResolvedValueOnce(BLOCKERS_RESPONSE);
+    mockPost.mockRejectedValueOnce(new Error("network failure"));
+    render(<BlockersPage />);
+    await waitFor(() => screen.getByRole("textbox", { name: "Your response" }));
+
+    act(() => {
+      fireEvent.change(screen.getByRole("textbox", { name: "Your response" }), {
+        target: { value: "My answer." },
+      });
+    });
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Send response" }));
+    });
+
+    await waitFor(() => screen.getByRole("alert"));
+    expect(screen.getByRole("textbox", { name: "Your response" })).toHaveValue("My answer.");
+  });
 });

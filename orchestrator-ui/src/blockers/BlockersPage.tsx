@@ -247,7 +247,7 @@ function BlockerCard({ blocker, form, onTextChange, onSubmit }: CardProps) {
           <textarea
             id={`response-${blocker.id}`}
             rows={3}
-            value={form.status === "idle" || form.status === "error" ? form.text : ""}
+            value={form.status !== "success" ? form.text : ""}
             onChange={(e) => onTextChange(e.target.value)}
             disabled={form.status === "submitting"}
             required
