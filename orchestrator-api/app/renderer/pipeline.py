@@ -3,6 +3,7 @@ from __future__ import annotations
 from app.personas.composer import compose_persona
 from app.personas.models import Overlay, PersonaType
 from app.profile.schema import ExecutionProfile
+from app.renderer.agents import AgentsRenderer
 from app.renderer.base import InstructionRenderer, RenderedOutput
 from app.renderer.claude import ClaudeRenderer
 from app.skills.models import Skill
@@ -11,9 +12,9 @@ from app.skills.models import Skill
 def _get_renderer(provider: str) -> InstructionRenderer:
     if provider == "claude":
         return ClaudeRenderer()
-    raise NotImplementedError(
-        f"Instruction renderer for provider '{provider}' is not yet implemented (Phase 7)"
-    )
+    if provider in ("codex", "gemini"):
+        return AgentsRenderer(provider)
+    raise NotImplementedError(f"Instruction renderer for provider '{provider}' is not implemented")
 
 
 def compose_and_render(

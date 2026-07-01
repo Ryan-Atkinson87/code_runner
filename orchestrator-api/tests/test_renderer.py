@@ -5,7 +5,7 @@ import pytest
 from app.personas.composer import compose_persona
 from app.personas.models import ComposedPersona, Overlay, PersonaType
 from app.profile.schema import ExecutionProfile, PersonaEntry
-from app.renderer import ClaudeRenderer, get_renderer
+from app.renderer import AgentsRenderer, ClaudeRenderer, get_renderer
 from app.renderer.base import (
     RenderedOutput,
     applies_to_provider,
@@ -271,19 +271,141 @@ class TestClaudeRenderer:
         assert reloaded.applies_to == ["claude", "codex"]
 
 
+class TestAgentsRenderer:
+    def test_renders_agents_md_at_root(self) -> None:
+        persona = _backend_implementor()
+        renderer = AgentsRenderer("codex")
+        output = renderer.render(persona)
+        assert "AGENTS.md" in output.files
+        assert len(output.files) == 1
+
+    def test_agents_md_contains_persona_header_and_prompt(self) -> None:
+        persona = _backend_implementor()
+        renderer = AgentsRenderer("codex")
+        output = renderer.render(persona)
+        content = output.files["AGENTS.md"]
+        assert "implementor × backend" in content
+        assert "You are an implementor." in content
+
+    def test_agents_md_contains_engine_contract(self) -> None:
+        persona = _backend_implementor()
+        renderer = AgentsRenderer("codex")
+        output = renderer.render(persona)
+        assert "Engine contract" in output.files["AGENTS.md"]
+
+    def test_stage_skills_inlined_not_as_files(self) -> None:
+        skills = [_skill("workflow-testing", SkillStage.TEST, body="Run tests.")]
+        persona = _backend_implementor(skills)
+        renderer = AgentsRenderer("codex")
+        output = renderer.render(persona)
+        assert "AGENTS.md" in output.files
+        assert len(output.files) == 1
+        assert "workflow-testing" in output.files["AGENTS.md"]
+        assert "Run tests." in output.files["AGENTS.md"]
+
+    def test_cross_cutting_inlined_under_own_section(self) -> None:
+        skills = [
+            _skill("boundaries", SkillStage.CROSS_CUTTING, body="Stay in bounds."),
+            _skill("coding", SkillStage.IMPLEMENT, body="Write code."),
+        ]
+        persona = _backend_implementor(skills)
+        renderer = AgentsRenderer("gemini")
+        output = renderer.render(persona)
+        content = output.files["AGENTS.md"]
+        assert "Cross-cutting rules" in content
+        assert "Stay in bounds." in content
+        assert "Skills" in content
+        assert "Write code." in content
+
+    def test_engine_executor_skills_excluded(self) -> None:
+        skills = [
+            _skill("ai-skill", SkillStage.IMPLEMENT, executor="ai", body="Do this."),
+            _skill("engine-skill", SkillStage.IMPLEMENT, executor="engine", body="Engine only."),
+        ]
+        persona = _backend_implementor(skills)
+        renderer = AgentsRenderer("codex")
+        output = renderer.render(persona)
+        content = output.files["AGENTS.md"]
+        assert "ai-skill" in content
+        assert "engine-skill" not in content
+
+    def test_provider_tagged_skills_filtered(self) -> None:
+        skills = [
+            _skill("codex-rule", SkillStage.IMPLEMENT, applies_to="codex", body="Codex only."),
+            _skill("claude-rule", SkillStage.IMPLEMENT, applies_to="claude", body="Claude only."),
+            _skill("shared", SkillStage.IMPLEMENT, applies_to="neutral", body="Shared."),
+        ]
+        persona = _backend_implementor(skills)
+        renderer = AgentsRenderer("codex")
+        output = renderer.render(persona)
+        content = output.files["AGENTS.md"]
+        assert "Codex only." in content
+        assert "Claude only." not in content
+        assert "Shared." in content
+
+    def test_gemini_filters_codex_skills(self) -> None:
+        skills = [
+            _skill("codex-rule", SkillStage.IMPLEMENT, applies_to="codex", body="Codex only."),
+            _skill("gemini-rule", SkillStage.IMPLEMENT, applies_to="gemini", body="Gemini only."),
+        ]
+        persona = _backend_implementor(skills)
+        renderer = AgentsRenderer("gemini")
+        output = renderer.render(persona)
+        content = output.files["AGENTS.md"]
+        assert "Gemini only." in content
+        assert "Codex only." not in content
+
+    def test_no_skills_renders_only_agents_md(self) -> None:
+        persona = _backend_implementor()
+        renderer = AgentsRenderer("codex")
+        output = renderer.render(persona)
+        assert len(output.files) == 1
+        assert "AGENTS.md" in output.files
+
+    def test_persona_without_speciality(self) -> None:
+        persona = compose_persona(PersonaType.PLANNER, "", BASE_PROMPTS, [], [])
+        renderer = AgentsRenderer("gemini")
+        output = renderer.render(persona)
+        content = output.files["AGENTS.md"]
+        assert "# planner" in content
+        assert "×" not in content
+
+    def test_codex_and_gemini_produce_identical_structure(self) -> None:
+        skills = [
+            _skill("shared", SkillStage.IMPLEMENT, applies_to="neutral", body="Works everywhere.")
+        ]
+        persona = _backend_implementor(skills)
+        codex_output = AgentsRenderer("codex").render(persona)
+        gemini_output = AgentsRenderer("gemini").render(persona)
+        assert codex_output.files["AGENTS.md"] == gemini_output.files["AGENTS.md"]
+
+    def test_no_claude_skill_files_produced(self) -> None:
+        skills = [_skill("my-skill", SkillStage.IMPLEMENT, body="Do it.")]
+        persona = _backend_implementor(skills)
+        renderer = AgentsRenderer("codex")
+        output = renderer.render(persona)
+        assert not any(k.startswith(".claude/") for k in output.files)
+
+
 class TestGetRenderer:
     def test_claude(self) -> None:
         renderer = get_renderer("claude")
         assert isinstance(renderer, ClaudeRenderer)
         assert renderer.provider == "claude"
 
-    def test_codex_not_implemented(self) -> None:
-        with pytest.raises(NotImplementedError, match="Phase 7"):
-            get_renderer("codex")
+    def test_codex(self) -> None:
+        renderer = get_renderer("codex")
+        assert isinstance(renderer, AgentsRenderer)
+        assert renderer.provider == "codex"
 
-    def test_gemini_not_implemented(self) -> None:
-        with pytest.raises(NotImplementedError, match="Phase 7"):
-            get_renderer("gemini")
+    def test_gemini(self) -> None:
+        renderer = get_renderer("gemini")
+        assert isinstance(renderer, AgentsRenderer)
+        assert renderer.provider == "gemini"
+
+    def test_unknown_provider_raises(self) -> None:
+        with pytest.raises(NotImplementedError):
+            get_renderer("unknown-provider")
 
 
 class TestComposeAndRender:
@@ -399,3 +521,51 @@ class TestComposeAndRender:
         assert len(written) == 2
         assert (wd / "CLAUDE.md").exists()
         assert (wd / ".claude/skills/coding/SKILL.md").exists()
+
+    def test_codex_pipeline_produces_agents_md(self) -> None:
+        profile = ExecutionProfile(
+            personas=[
+                PersonaEntry(
+                    type=PersonaType.IMPLEMENTOR,
+                    speciality="backend",
+                ),
+            ]
+        )
+        skills = [
+            _skill("coding", SkillStage.IMPLEMENT, body="Write code."),
+            _skill("boundaries", SkillStage.CROSS_CUTTING, body="Stay in bounds."),
+        ]
+        result = compose_and_render(
+            profile=profile,
+            skills=skills,
+            base_prompts=BASE_PROMPTS,
+            overlays=[],
+            provider="codex",
+        )
+        output = result["implementor×backend"]
+        assert "AGENTS.md" in output.files
+        assert "CLAUDE.md" not in output.files
+        content = output.files["AGENTS.md"]
+        assert "Write code." in content
+        assert "Stay in bounds." in content
+
+    def test_gemini_pipeline_produces_agents_md(self) -> None:
+        profile = ExecutionProfile(
+            personas=[
+                PersonaEntry(
+                    type=PersonaType.IMPLEMENTOR,
+                    speciality="backend",
+                ),
+            ]
+        )
+        skills = [_skill("coding", SkillStage.IMPLEMENT, body="Write code.")]
+        result = compose_and_render(
+            profile=profile,
+            skills=skills,
+            base_prompts=BASE_PROMPTS,
+            overlays=[],
+            provider="gemini",
+        )
+        output = result["implementor×backend"]
+        assert "AGENTS.md" in output.files
+        assert "CLAUDE.md" not in output.files
