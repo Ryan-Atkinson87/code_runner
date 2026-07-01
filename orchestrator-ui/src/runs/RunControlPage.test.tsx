@@ -81,7 +81,8 @@ describe("RunControlPage", () => {
   it("shows empty state when no open waves exist", async () => {
     mockGet
       .mockResolvedValueOnce({ waves: CLOSED_WAVES })
-      .mockResolvedValueOnce(NO_RUN);
+      .mockResolvedValueOnce(NO_RUN)
+      .mockResolvedValueOnce({});
     render(<RunControlPage />);
     await waitFor(() =>
       expect(
@@ -89,6 +90,31 @@ describe("RunControlPage", () => {
       ).toBeInTheDocument(),
     );
     expect(screen.queryByRole("form")).not.toBeInTheDocument();
+  });
+
+  it("shows GitHub milestones link in empty state when config provides github_url", async () => {
+    mockGet
+      .mockResolvedValueOnce({ waves: CLOSED_WAVES })
+      .mockResolvedValueOnce(NO_RUN)
+      .mockResolvedValueOnce({ github_url: "https://github.com/owner/repo" });
+    render(<RunControlPage />);
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: /Open GitHub milestones/i })).toBeInTheDocument(),
+    );
+    expect(screen.getByRole("link", { name: /Open GitHub milestones/i })).toHaveAttribute(
+      "href",
+      "https://github.com/owner/repo/milestones",
+    );
+  });
+
+  it("shows no action link in empty state when config has no github_url", async () => {
+    mockGet
+      .mockResolvedValueOnce({ waves: CLOSED_WAVES })
+      .mockResolvedValueOnce(NO_RUN)
+      .mockResolvedValueOnce({});
+    render(<RunControlPage />);
+    await waitFor(() => screen.getByText(/No open waves available/));
+    expect(screen.queryByRole("link", { name: /milestones/i })).not.toBeInTheDocument();
   });
 
   it("calls POST /runs/start with selected wave and provider", async () => {
