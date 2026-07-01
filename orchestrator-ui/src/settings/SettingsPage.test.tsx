@@ -55,9 +55,15 @@ const CONFIG = {
 // Setup / teardown
 // ---------------------------------------------------------------------------
 
+const PROVIDERS = { providers: ["claude", "codex", "gemini"] };
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(window, "confirm").mockImplementation(() => true);
+  mockGet.mockImplementation(async (url: string) => {
+    if (url === "/config") return CONFIG;
+    return PROVIDERS;
+  });
 });
 
 afterEach(() => {
@@ -90,12 +96,23 @@ describe("SettingsPage", () => {
   });
 
   it("renders config values — provider, plan, models", async () => {
-    mockGet.mockResolvedValueOnce(CONFIG);
     render(<SettingsPage />);
     await waitFor(() => expect(screen.getByDisplayValue("claude")).toBeInTheDocument());
     expect(screen.getByDisplayValue("pro")).toBeInTheDocument();
     expect(screen.getByDisplayValue("claude-opus-4-8")).toBeInTheDocument();
     expect(screen.getAllByDisplayValue("claude-sonnet-4-6")).toHaveLength(2);
+  });
+
+  it("renders provider options from API, not a hardcoded constant", async () => {
+    mockGet.mockImplementation(async (url: string) => {
+      if (url === "/config") return CONFIG;
+      return { providers: ["claude", "codex", "gemini", "future-provider"] };
+    });
+    render(<SettingsPage />);
+    await waitFor(() => screen.getByDisplayValue("claude"));
+    const select = screen.getByRole("combobox", { name: /Default provider/i });
+    const options = Array.from((select as HTMLSelectElement).options).map((o) => o.value);
+    expect(options).toEqual(["claude", "codex", "gemini", "future-provider"]);
   });
 
   it("never renders secret values — only env-var names", async () => {

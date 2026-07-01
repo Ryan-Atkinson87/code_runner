@@ -55,6 +55,7 @@ type SectionStatus = "idle" | "saving" | "success" | "error";
 interface PopulatedState {
   phase: "populated";
   config: ConfigResponse;
+  providers: string[];
   provider: ProviderEdit;
   providerStatus: SectionStatus;
   providerError: string;
@@ -72,7 +73,7 @@ type PageState =
   | PopulatedState;
 
 type PageAction =
-  | { type: "loaded"; config: ConfigResponse }
+  | { type: "loaded"; config: ConfigResponse; providers: string[] }
   | { type: "load_error"; message: string }
   | { type: "provider_change"; field: keyof ProviderEdit; value: string }
   | { type: "provider_saving" }
@@ -111,6 +112,7 @@ function reducer(state: PageState, action: PageAction): PageState {
       return {
         phase: "populated",
         config: action.config,
+        providers: action.providers,
         provider: configToProviderEdit(action.config),
         providerStatus: "idle",
         providerError: "",
@@ -246,8 +248,11 @@ export function SettingsPage() {
 
   const fetchConfig = useCallback(async (signal?: AbortSignal) => {
     try {
-      const data = await apiClient.get<ConfigResponse>("/config", signal);
-      dispatch({ type: "loaded", config: data });
+      const [config, providersResp] = await Promise.all([
+        apiClient.get<ConfigResponse>("/config", signal),
+        apiClient.get<{ providers: string[] }>("/config/providers", signal),
+      ]);
+      dispatch({ type: "loaded", config, providers: providersResp.providers });
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
       dispatch({
@@ -273,7 +278,7 @@ export function SettingsPage() {
     );
   }
 
-  const { config, provider, providerStatus, providerError, egress, egressStatus, egressError, notif, notifStatus, notifError } = state;
+  const { config, providers, provider, providerStatus, providerError, egress, egressStatus, egressError, notif, notifStatus, notifError } = state;
 
   // ---- provider save ----
   async function saveProvider() {
@@ -336,8 +341,6 @@ export function SettingsPage() {
     }
   }
 
-  const PROVIDER_OPTIONS = ["claude", "codex", "gemini"] as const;
-
   return (
     <div className="mx-auto max-w-2xl space-y-8 p-6">
       <h1 className="text-xl font-semibold text-gray-900">Settings</h1>
@@ -363,7 +366,7 @@ export function SettingsPage() {
                 onChange={(e) => dispatch({ type: "provider_change", field: "default", value: e.target.value })}
                 className="mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                {PROVIDER_OPTIONS.map((opt) => (
+                {providers.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, get_args
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, ValidationError
@@ -13,6 +13,7 @@ from app.config.schema import (
     ProviderModels,
     ProviderSection,
 )
+from app.providers.types import ProviderName
 
 router = APIRouter(prefix="/config", tags=["config"], dependencies=[Depends(require_auth)])
 
@@ -56,6 +57,10 @@ class ConfigResponse(BaseModel):
     secrets: dict[str, str] = Field(default_factory=dict)
 
 
+class ProvidersResponse(BaseModel):
+    providers: list[str]
+
+
 class UpdateProviderRequest(BaseModel):
     default: str | None = None
     plan: str | None = None
@@ -93,6 +98,11 @@ def _config_response(config: ProjectConfig) -> ConfigResponse:
 async def get_config() -> ConfigResponse:
     config = _get_config()
     return _config_response(config)
+
+
+@router.get("/providers", response_model=ProvidersResponse)
+async def get_providers() -> ProvidersResponse:
+    return ProvidersResponse(providers=list(get_args(ProviderName)))
 
 
 @router.put("/provider", response_model=ConfigResponse)

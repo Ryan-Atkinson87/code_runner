@@ -69,10 +69,37 @@ class TestAuthGuard:
         client = _make_client(monkeypatch, authed=False)
         assert client.get("/config").status_code == 401
 
+    def test_providers_rejected_unauthenticated(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        client = _make_client(monkeypatch, authed=False)
+        assert client.get("/config/providers").status_code == 401
+
     def test_update_rejected_unauthenticated(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch, authed=False)
         resp = client.put("/config/provider", json={"default": "codex"})
         assert resp.status_code == 401
+
+
+class TestGetProviders:
+    def test_returns_provider_list(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        client = _make_client(monkeypatch)
+        resp = client.get("/config/providers")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "providers" in data
+        assert isinstance(data["providers"], list)
+        assert set(data["providers"]) == {"claude", "codex", "gemini"}
+
+    def test_provider_list_matches_provider_name_type(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from typing import get_args
+
+        from app.providers.types import ProviderName
+
+        client = _make_client(monkeypatch)
+        resp = client.get("/config/providers")
+        data = resp.json()
+        assert set(data["providers"]) == set(get_args(ProviderName))
 
 
 class TestReadConfig:
