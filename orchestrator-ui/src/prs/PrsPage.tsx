@@ -108,15 +108,9 @@ function PrCard({ pr }: { pr: HandoffPR }) {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-gray-100 px-4 py-3">
         <div className="min-w-0">
-          <a
-            href={pr.html_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-base font-semibold text-indigo-700 hover:underline"
-            aria-label={`Open pull request #${pr.number} on GitHub: ${pr.title}`}
-          >
+          <p className="text-base font-semibold text-gray-900">
             #{pr.number} {pr.title}
-          </a>
+          </p>
           <p className="mt-0.5 text-xs text-gray-500">
             {pr.head_branch} → {pr.base_branch}
           </p>
@@ -132,7 +126,7 @@ function PrCard({ pr }: { pr: HandoffPR }) {
             target="_blank"
             rel="noopener noreferrer"
             className="rounded border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-            aria-label={`Review pull request #${pr.number} on GitHub`}
+            aria-label={`Review PR #${pr.number}: ${pr.title} on GitHub`}
           >
             Review on GitHub ↗
           </a>
