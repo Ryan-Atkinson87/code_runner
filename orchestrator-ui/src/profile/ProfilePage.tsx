@@ -259,7 +259,7 @@ export function ProfilePage() {
       </div>
 
       {actionError && (
-        <p role="alert" className="mb-3 text-sm text-red-600">
+        <p role="alert" className="mb-3 text-sm text-red-700">
           {actionError}
         </p>
       )}
@@ -277,7 +277,7 @@ export function ProfilePage() {
           type="button"
           onClick={() => { void handleReject(rawYaml); }}
           disabled={isActing}
-          className="rounded border border-red-300 bg-white px-4 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+          className="rounded border border-red-300 bg-white px-4 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
         >
           {state.phase === "rejecting" ? "Rejecting…" : "Reject"}
         </button>
