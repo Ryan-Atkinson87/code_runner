@@ -279,12 +279,12 @@ provider/plan switching, then proves a full wave end-to-end on a second provider
 
 - [x] #69 — AGENTS.md instruction-file renderer for Codex/Gemini _(deps: #22)_
 - [x] #70 — Codex CLI provider adapter: invocation, event mapping, usage, blocker detection _(deps: #16, #9, #4)_
-- [ ] #71 — Codex permission and sandbox lockdown layer _(deps: #70)_
+- [x] #71 — Codex permission and sandbox lockdown layer _(deps: #70)_
 - [x] #72 — Gemini CLI provider adapter: invocation, event mapping, usage, blocker detection _(deps: #16, #9, #4)_
-- [ ] #73 — Gemini permission and sandbox lockdown layer _(deps: #72)_
+- [x] #73 — Gemini permission and sandbox lockdown layer _(deps: #72)_
 - [ ] #74 — Multi-provider selection, switch, and end-to-end validation _(deps: #69, #71, #73, #30, #29, #37)_
-- [ ] #229 — refactor: extract shared `_build_prompt` / `_derive_artifacts` helpers out of provider adapters _(deps: #70, #72)_
-- [ ] #230 — feat: drive RunControlPage provider list from `GET /config/providers` API _(deps: #205)_
+- [x] #229 — refactor: extract shared `_build_prompt` / `_derive_artifacts` helpers out of provider adapters _(deps: #70, #72)_
+- [x] #230 — feat: drive RunControlPage provider list from `GET /config/providers` API _(deps: #205)_
 
 **Workable now (Phase-3 deps permitting):** #69 (needs renderer #22), #70 and #72 (each need
 #16/#9/#4) are the three independent starts. Then #71 (needs #70) and #73 (needs #72). The
