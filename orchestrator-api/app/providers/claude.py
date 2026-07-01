@@ -21,6 +21,7 @@ from app.providers.types import (
     SessionRole,
     UsageReport,
 )
+from app.providers.utils import build_prompt, derive_artifacts
 
 _TOOL_DEFS: dict[str, dict[str, str]] = {
     "bash": {"type": "bash_20250124", "name": "bash"},
@@ -54,7 +55,7 @@ class ClaudeAdapter(ProviderAdapter):
         context_files: list[Path],
     ) -> SessionResult:
         tools = _build_tools(allowed_tools)
-        user_content = _build_user_content(prompt, context_files)
+        user_content = build_prompt(prompt, context_files)
         messages: list[dict[str, object]] = [{"role": "user", "content": user_content}]
 
         events: list[NormalisedEvent] = []
@@ -91,7 +92,7 @@ class ClaudeAdapter(ProviderAdapter):
         except TimeoutError:
             outcome = SessionOutcome.ERROR
 
-        artifacts = await _derive_artifacts(repo, head_before)
+        artifacts = await derive_artifacts(repo, head_before)
 
         return SessionResult(
             events=events,
@@ -131,14 +132,6 @@ class ClaudeAdapter(ProviderAdapter):
 
 def _build_tools(allowed_tools: list[str]) -> list[dict[str, str]]:
     return [_TOOL_DEFS[name] for name in allowed_tools if name in _TOOL_DEFS]
-
-
-def _build_user_content(prompt: str, context_files: list[Path]) -> str:
-    parts = [prompt]
-    for path in context_files:
-        if path.exists():
-            parts.append(f"\n\n--- {path.name} ---\n{path.read_text(encoding='utf-8')}")
-    return "\n".join(parts)
 
 
 def _normalise_content(
@@ -314,28 +307,3 @@ def _execute_text_editor(tool_input: dict[str, object], workdir: Path) -> str:
     return f"Unknown command: {command}"
 
 
-async def _derive_artifacts(repo: GitRepo, head_before: str) -> list[str]:
-    changed: set[str] = set()
-
-    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(args, cwd=repo.path, capture_output=True, text=True)
-
-    result = await asyncio.to_thread(run, ["git", "diff", "--name-only"])
-    if result.stdout.strip():
-        changed.update(result.stdout.strip().split("\n"))
-
-    result = await asyncio.to_thread(run, ["git", "diff", "--cached", "--name-only"])
-    if result.stdout.strip():
-        changed.update(result.stdout.strip().split("\n"))
-
-    head_now = repo.rev_parse("HEAD")
-    if head_now != head_before:
-        result = await asyncio.to_thread(run, ["git", "diff", "--name-only", head_before, head_now])
-        if result.stdout.strip():
-            changed.update(result.stdout.strip().split("\n"))
-
-    result = await asyncio.to_thread(run, ["git", "ls-files", "--others", "--exclude-standard"])
-    if result.stdout.strip():
-        changed.update(result.stdout.strip().split("\n"))
-
-    return sorted(changed)

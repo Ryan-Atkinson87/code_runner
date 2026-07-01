@@ -12,8 +12,6 @@ import pytest
 from app.providers.claude import (
     ClaudeAdapter,
     _build_tools,
-    _build_user_content,
-    _derive_artifacts,
     _execute_bash,
     _execute_text_editor,
     _map_stop_reason,
@@ -28,6 +26,7 @@ from app.providers.types import (
     SessionRole,
     UsageReport,
 )
+from app.providers.utils import build_prompt, derive_artifacts
 
 
 def _make_text_block(text: str = "hello") -> SimpleNamespace:
@@ -85,22 +84,22 @@ class TestBuildTools:
         assert _build_tools([]) == []
 
 
-class TestBuildUserContent:
+class TestBuildPrompt:
     def test_prompt_only(self) -> None:
-        result = _build_user_content("Fix the bug", [])
+        result = build_prompt("Fix the bug", [])
         assert result == "Fix the bug"
 
     def test_with_context_files(self, tmp_path: Path) -> None:
         ctx = tmp_path / "issue.md"
         ctx.write_text("Issue #42: broken auth")
-        result = _build_user_content("Fix it", [ctx])
+        result = build_prompt("Fix it", [ctx])
         assert "Fix it" in result
         assert "Issue #42: broken auth" in result
         assert "issue.md" in result
 
     def test_missing_context_file_skipped(self, tmp_path: Path) -> None:
         missing = tmp_path / "nonexistent.md"
-        result = _build_user_content("Fix it", [missing])
+        result = build_prompt("Fix it", [missing])
         assert result == "Fix it"
 
 
@@ -315,7 +314,7 @@ class TestDeriveArtifacts:
         head_before = repo.rev_parse("HEAD")
         (tmp_path / "new_file.py").write_text("x = 1")
         (tmp_path / "initial.txt").write_text("modified")
-        artifacts = await _derive_artifacts(repo, head_before)
+        artifacts = await derive_artifacts(repo, head_before)
         assert "new_file.py" in artifacts
         assert "initial.txt" in artifacts
 
@@ -323,7 +322,7 @@ class TestDeriveArtifacts:
     async def test_no_changes(self, tmp_path: Path) -> None:
         repo = self._init_repo(tmp_path)
         head_before = repo.rev_parse("HEAD")
-        artifacts = await _derive_artifacts(repo, head_before)
+        artifacts = await derive_artifacts(repo, head_before)
         assert artifacts == []
 
     @pytest.mark.asyncio
@@ -337,7 +336,7 @@ class TestDeriveArtifacts:
             ["git", "rev-parse", "HEAD"], cwd=tmp_path, capture_output=True, text=True
         )
         repo.rev_parse.return_value = result.stdout.strip()
-        artifacts = await _derive_artifacts(repo, head_before)
+        artifacts = await derive_artifacts(repo, head_before)
         assert "committed.py" in artifacts
 
 
