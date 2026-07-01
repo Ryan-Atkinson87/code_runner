@@ -242,6 +242,11 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [x] #209 — UsageGaugesPage — inline error when usage override POST fails _(ux)_
 - [x] #210 — ProfilePage — remove tautological rawYaml ternary _(chore)_
 - [x] #211 — [A11y] ProfilePage — raise action-error and Reject button red to text-red-700 _(a11y)_
+- [x] #219 — [A11y] ReportsPage — tab/panel ARIA linkage (id + aria-labelledby) _(a11y)_
+- [x] #220 — [A11y] ReportsPage — Unicode outcome symbols aria-label _(a11y)_
+- [x] #222 — [A11y] BlockersPage + SettingsPage — raise error contrast to text-red-700 _(a11y)_
+- [x] #223 — [Responsive] All pages — text-base sm:text-sm on inputs/selects/textareas prevents iOS auto-zoom _(responsive)_
+- [x] #205 — drive settings provider options list from GET /config/providers _(deps: #67)_
 
 **Workable now (Phase-1/2/3/4/5 deps permitting):** #46 first (needs #16, #3). After #46: #47,
 #48 (parallel); then #49 (needs #46, #47) and #50 (needs #48, #47). The API issues unblock as
@@ -272,10 +277,10 @@ adapter workstreams (**Codex** #70→#71, **Gemini** #72→#73) run in parallel;
 wires provider selection, run-start instruction-file generation, non-Claude usage metering, and
 provider/plan switching, then proves a full wave end-to-end on a second provider.
 
-- [ ] #69 — AGENTS.md instruction-file renderer for Codex/Gemini _(deps: #22)_
-- [ ] #70 — Codex CLI provider adapter: invocation, event mapping, usage, blocker detection _(deps: #16, #9, #4)_
+- [x] #69 — AGENTS.md instruction-file renderer for Codex/Gemini _(deps: #22)_
+- [x] #70 — Codex CLI provider adapter: invocation, event mapping, usage, blocker detection _(deps: #16, #9, #4)_
 - [ ] #71 — Codex permission and sandbox lockdown layer _(deps: #70)_
-- [ ] #72 — Gemini CLI provider adapter: invocation, event mapping, usage, blocker detection _(deps: #16, #9, #4)_
+- [x] #72 — Gemini CLI provider adapter: invocation, event mapping, usage, blocker detection _(deps: #16, #9, #4)_
 - [ ] #73 — Gemini permission and sandbox lockdown layer _(deps: #72)_
 - [ ] #74 — Multi-provider selection, switch, and end-to-end validation _(deps: #69, #71, #73, #30, #29, #37)_
 - [ ] #229 — refactor: extract shared `_build_prompt` / `_derive_artifacts` helpers out of provider adapters _(deps: #70, #72)_
