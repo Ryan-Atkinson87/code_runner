@@ -7,9 +7,9 @@ from statistics import median
 from app.observability.rollup import RollupRow, RollupStore
 
 # Thresholds — all overridable via EfficiencyReportGenerator constructor.
-_REGRESSION_THRESHOLD_PCT: float = 10.0   # % month-over-month increase triggers a flag
-_HIGH_RETRY_RATE: float = 1.0             # avg retries/session; above this → looping flag
-_VERBOSE_SKILL_MULTIPLIER: float = 2.0    # skill avg tokens_in > n× median → verbose flag
+_REGRESSION_THRESHOLD_PCT: float = 10.0  # % month-over-month increase triggers a flag
+_HIGH_RETRY_RATE: float = 1.0  # avg retries/session; above this → looping flag
+_VERBOSE_SKILL_MULTIPLIER: float = 2.0  # skill avg tokens_in > n× median → verbose flag
 _HIGH_INPUT_RATIO: float = 4.0  # total tokens_in / tokens_out; above → unused-context hint
 
 
@@ -278,9 +278,7 @@ class EfficiencyReportGenerator:
             skill_retries[r.skill] = skill_retries.get(r.skill, 0) + r.retry_count
 
         avg_in_per_session: dict[str, float] = {
-            s: skill_in[s] / skill_sessions[s]
-            for s in skill_in
-            if skill_sessions.get(s, 0) > 0
+            s: skill_in[s] / skill_sessions[s] for s in skill_in if skill_sessions.get(s, 0) > 0
         }
 
         if len(avg_in_per_session) >= 2:

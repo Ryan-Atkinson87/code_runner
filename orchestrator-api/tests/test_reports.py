@@ -140,10 +140,20 @@ class TestTokenBreakdown:
 
     def test_by_role_and_skill(self) -> None:
         store = _store_with(
-            _capture(session_id="a", role=SessionRole.IMPLEMENTOR, skill="implement",
-                     tokens_in=500, tokens_out=200),
-            _capture(session_id="b", role=SessionRole.ORCHESTRATOR, skill="review",
-                     tokens_in=300, tokens_out=100),
+            _capture(
+                session_id="a",
+                role=SessionRole.IMPLEMENTOR,
+                skill="implement",
+                tokens_in=500,
+                tokens_out=200,
+            ),
+            _capture(
+                session_id="b",
+                role=SessionRole.ORCHESTRATOR,
+                skill="review",
+                tokens_in=300,
+                tokens_out=100,
+            ),
         )
         report = EfficiencyReportGenerator().generate_on_demand(store)
         assert report.tokens.by_role["implementor"] == 700
@@ -237,10 +247,8 @@ class TestRegressionDetection:
         june = datetime(2026, 6, 1, tzinfo=UTC)
         july = datetime(2026, 7, 1, tzinfo=UTC)
         store = _store_with(
-            _capture(session_id="j6", month_dt=june, issue_number=1,
-                     tokens_in=80, tokens_out=20),
-            _capture(session_id="j7", month_dt=july, issue_number=1,
-                     tokens_in=800, tokens_out=200),
+            _capture(session_id="j6", month_dt=june, issue_number=1, tokens_in=80, tokens_out=20),
+            _capture(session_id="j7", month_dt=july, issue_number=1, tokens_in=800, tokens_out=200),
         )
         report = EfficiencyReportGenerator().generate_on_demand(store)
         tpi_flags = [f for f in report.regressions if f.metric == "tokens_per_issue"]
@@ -339,10 +347,18 @@ class TestSuggestions:
     def test_high_cost_model_suggestion(self) -> None:
         # Expensive model has same completion rate as cheaper model → flag it
         store = _store_with(
-            _capture(session_id="a", model="claude-opus-4-8", cost_usd=0.10,
-                     outcome=SessionOutcome.COMPLETED),
-            _capture(session_id="b", model="claude-sonnet-4-6", cost_usd=0.01,
-                     outcome=SessionOutcome.COMPLETED),
+            _capture(
+                session_id="a",
+                model="claude-opus-4-8",
+                cost_usd=0.10,
+                outcome=SessionOutcome.COMPLETED,
+            ),
+            _capture(
+                session_id="b",
+                model="claude-sonnet-4-6",
+                cost_usd=0.01,
+                outcome=SessionOutcome.COMPLETED,
+            ),
         )
         report = EfficiencyReportGenerator().generate_on_demand(store)
         cost_hints = [s for s in report.suggestions if s.category == "high_cost_model"]
