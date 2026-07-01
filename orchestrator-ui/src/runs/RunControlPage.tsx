@@ -412,18 +412,24 @@ export function RunControlPage() {
                 >
                   Provider
                 </label>
-                <select
-                  id="run-provider"
-                  name="provider"
-                  defaultValue="claude"
-                  className="w-full rounded border border-gray-300 px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                >
-                  {providers.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
+                {providers.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    No providers available — check backend configuration.
+                  </p>
+                ) : (
+                  <select
+                    id="run-provider"
+                    name="provider"
+                    defaultValue={providers[0]}
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  >
+                    {providers.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <button
