@@ -444,6 +444,85 @@ Discard the pending proposal. Nothing is written.
 
 ---
 
+## Efficiency reports
+
+All three endpoints return the same `EfficiencyReport` shape. The `scope` field identifies which filter was applied.
+
+### `GET /reports`
+On-demand report over all rollup data.
+
+**Response 200:**
+```json
+{
+  "scope": "all",
+  "generated_at": "2026-06-30T12:00:00Z",
+  "total_sessions": 42,
+  "total_cost_usd": 1.23,
+  "tokens": {
+    "by_issue": { "47": 14200, "48": 8100 },
+    "by_role": { "implementor": 18300, "orchestrator": 4000 },
+    "by_skill": { "implement": 15000, "review": 7300 },
+    "by_wave": { "Observability + UI": 22300 },
+    "total_in": 17800,
+    "total_out": 4500
+  },
+  "retries": {
+    "total_retries": 5,
+    "avg_per_session": 0.12,
+    "high_retry_skills": []
+  },
+  "model_outcomes": [
+    {
+      "model": "claude-sonnet-4-6",
+      "session_count": 38,
+      "completed_count": 35,
+      "blocked_count": 2,
+      "error_count": 1,
+      "total_tokens": 19800,
+      "total_cost_usd": 1.10,
+      "completion_rate": 0.92
+    }
+  ],
+  "regressions": [
+    {
+      "metric": "tokens_per_issue",
+      "earlier_month": "2026-05",
+      "later_month": "2026-06",
+      "earlier_value": 400.0,
+      "later_value": 460.0,
+      "pct_increase": 15.0
+    }
+  ],
+  "suggestions": [
+    {
+      "category": "verbose_skill",
+      "message": "Skill 'implement' averages 9800 input tokens/session (3.2× median) — the prompt may be loading more context than needed."
+    }
+  ]
+}
+```
+
+`metric` in `regressions` is one of: `tokens_per_issue`, `retry_rate`.
+`category` in `suggestions` is one of: `verbose_skill`, `looping_step`, `high_input_ratio`, `high_cost_model`.
+
+**Response 401:** missing or invalid session cookie
+
+### `GET /reports/wave/{wave}`
+Report filtered to a single wave (GitHub milestone name). URL-encode wave names that contain spaces or special characters.
+
+**Response 200:** `EfficiencyReport` with `scope: "wave:<wave>"` and data filtered to that wave.
+**Response 401:** missing or invalid session cookie
+
+### `GET /reports/month/{month}`
+Report filtered to a single calendar month.
+
+**Path params:** `month` — `YYYY-MM` string (e.g. `2026-06`)
+
+**Response 200:** `EfficiencyReport` with `scope: "month:<month>"` and data filtered to that month.
+**Response 401:** missing or invalid session cookie
+
+---
+
 ## Error responses
 
 All error responses use the same JSON body shape regardless of status code:
