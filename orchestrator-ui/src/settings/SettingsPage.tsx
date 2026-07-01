@@ -229,7 +229,7 @@ function SectionFeedback({
   }
   if (status === "error") {
     return (
-      <p role="alert" className="text-sm text-red-600">
+      <p role="alert" className="text-sm text-red-700">
         {error}
       </p>
     );
@@ -361,7 +361,7 @@ export function SettingsPage() {
                 id="provider-default"
                 value={provider.default}
                 onChange={(e) => dispatch({ type: "provider_change", field: "default", value: e.target.value })}
-                className="mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 {PROVIDER_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
@@ -377,7 +377,7 @@ export function SettingsPage() {
                 type="text"
                 value={provider.plan}
                 onChange={(e) => dispatch({ type: "provider_change", field: "plan", value: e.target.value })}
-                className="mt-1 block w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded border border-gray-300 px-2 py-1.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
           </div>
@@ -400,7 +400,7 @@ export function SettingsPage() {
                   onChange={(e) =>
                     dispatch({ type: "provider_change", field, value: e.target.value })
                   }
-                  className="mt-1 block w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="mt-1 block w-full rounded border border-gray-300 px-2 py-1.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             ))}
@@ -424,7 +424,7 @@ export function SettingsPage() {
           rows={5}
           value={egress.allowText}
           onChange={(e) => dispatch({ type: "egress_change", value: e.target.value })}
-          className="block w-full rounded border border-gray-300 px-2 py-1.5 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="block w-full rounded border border-gray-300 px-2 py-1.5 font-mono text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           spellCheck={false}
         />
         <div className="mt-2 flex items-center gap-3">

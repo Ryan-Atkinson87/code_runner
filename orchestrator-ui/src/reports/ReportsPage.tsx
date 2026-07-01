@@ -306,8 +306,11 @@ function ModelOutcomesTable({ outcomes }: { outcomes: ModelOutcome[] }) {
                   >
                     {Math.round(o.completion_rate * 100)}%
                   </span>
-                  <span className="ml-1 text-xs text-gray-400">
-                    ({o.completed_count}✓ {o.blocked_count}⚠ {o.error_count}✕)
+                  <span
+                    aria-label={`${o.completed_count} completed, ${o.blocked_count} blocked, ${o.error_count} errored`}
+                    className="ml-1 text-xs text-gray-400"
+                  >
+                    <span aria-hidden="true">({o.completed_count}✓ {o.blocked_count}⚠ {o.error_count}✕)</span>
                   </span>
                 </td>
                 <td className="px-4 py-2 text-right text-gray-700">
@@ -515,6 +518,7 @@ export function ReportsPage() {
         {SCOPE_TABS.map((tab) => (
           <button
             key={tab.id}
+            id={`tab-${tab.id}`}
             role="tab"
             aria-selected={scope === tab.id}
             aria-controls="report-panel"
@@ -546,7 +550,7 @@ export function ReportsPage() {
               <select
                 value={selectedWave}
                 onChange={(e) => setSelectedWave(e.target.value)}
-                className="rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="rounded border border-gray-300 px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="">— choose a wave —</option>
                 {waves.map((w) => (
@@ -571,14 +575,14 @@ export function ReportsPage() {
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="rounded border border-gray-300 px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </label>
         </div>
       )}
 
       {/* Report panel */}
-      <div id="report-panel" role="tabpanel">
+      <div id="report-panel" role="tabpanel" aria-labelledby={`tab-${scope}`}>
         {reportState.phase === "idle" && (
           <p className="text-sm text-gray-500">
             {scope === "wave"
