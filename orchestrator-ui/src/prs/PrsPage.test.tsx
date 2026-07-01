@@ -114,17 +114,25 @@ describe("PrsPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("links to GitHub PR", async () => {
+  it("links to GitHub PR via a single Review on GitHub link", async () => {
     mockGet.mockResolvedValueOnce(PRS_RESPONSE);
     render(<PrsPage />);
     await waitFor(() =>
       expect(
-        screen.getByRole("link", { name: /Open pull request #42 on GitHub/i }),
+        screen.getByRole("link", { name: /Review PR #42.*on GitHub/i }),
       ).toBeInTheDocument(),
     );
     expect(
-      screen.getByRole("link", { name: /Open pull request #42 on GitHub/i }),
+      screen.getByRole("link", { name: /Review PR #42.*on GitHub/i }),
     ).toHaveAttribute("href", PR.html_url);
+  });
+
+  it("renders exactly one link per PR card", async () => {
+    mockGet.mockResolvedValueOnce(PRS_RESPONSE);
+    render(<PrsPage />);
+    await waitFor(() =>
+      expect(screen.getAllByRole("link")).toHaveLength(1),
+    );
   });
 
   it("shows 'Ready to merge' badge when all checklist items checked", async () => {
