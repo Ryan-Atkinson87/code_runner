@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import { ApiError, apiClient } from "../api";
 import {
   EmptyState,
@@ -10,6 +10,10 @@ import {
 // ---------------------------------------------------------------------------
 // Types (mirroring docs/api.md Run control section)
 // ---------------------------------------------------------------------------
+
+interface ConfigMeta {
+  github_url?: string;
+}
 
 type RunStatus =
   | "pending"
@@ -133,6 +137,7 @@ function isActionableStatus(status: RunStatus): boolean {
 
 export function RunControlPage() {
   const [state, dispatch] = useReducer(reducer, { phase: "loading" });
+  const [githubMilestonesUrl, setGithubMilestonesUrl] = useState<string | null>(null);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     dispatch({ type: "reset" });
@@ -160,6 +165,19 @@ export function RunControlPage() {
     void load(controller.signal);
     return () => controller.abort();
   }, [load]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    apiClient
+      .get<ConfigMeta>("/config", controller.signal)
+      .then((cfg) => {
+        if (cfg?.github_url) {
+          setGithubMilestonesUrl(`${cfg.github_url}/milestones`);
+        }
+      })
+      .catch(() => {});
+    return () => { controller.abort(); };
+  }, []);
 
   if (state.phase === "loading") return <LoadingState />;
   if (state.phase === "error")
@@ -335,7 +353,21 @@ export function RunControlPage() {
             Start a Run
           </h2>
           {openWaves.length === 0 ? (
-            <EmptyState message="No open waves available. Open a milestone in GitHub to start a run." />
+            <EmptyState
+              message="No open waves available. Open a milestone in GitHub to start a run."
+              action={
+                githubMilestonesUrl ? (
+                  <a
+                    href={githubMilestonesUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Open GitHub milestones ↗
+                  </a>
+                ) : undefined
+              }
+            />
           ) : (
             <form
               onSubmit={(e) => void handleStart(e)}
