@@ -3,6 +3,7 @@ import { AuthProvider } from "./auth/AuthContext";
 import { LoginPage } from "./auth/LoginPage";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { LiveProgressPage } from "./progress/LiveProgressPage";
 import { RunControlPage } from "./runs/RunControlPage";
 
 export const router = createBrowserRouter([
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
             ),
           },
           { path: "runs", element: <RunControlPage /> },
+          { path: "progress", element: <LiveProgressPage /> },
         ],
       },
     ],
