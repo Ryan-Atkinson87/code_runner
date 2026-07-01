@@ -28,7 +28,7 @@ from app.providers.types import (
     SessionRole,
     UsageReport,
 )
-from app.providers.utils import build_prompt, derive_artifacts
+from app.providers.utils import LockdownError, build_prompt, derive_artifacts
 
 _BLOCKED_PHRASES = (
     "i need human input",
@@ -50,10 +50,6 @@ _PROHIBITED_CALL_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\.env(?!\.example)\b"),                  # .env secret files
     re.compile(r"\.github/workflows"),                    # CI/workflow files
 )
-
-
-class LockdownError(Exception):
-    """Raised when lockdown configuration is invalid (Spec §7.4, fails closed)."""
 
 
 class GeminiAdapter(ProviderAdapter):

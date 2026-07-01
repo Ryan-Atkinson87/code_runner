@@ -7,6 +7,10 @@ from pathlib import Path
 from app.git.repo import GitRepo
 
 
+class LockdownError(Exception):
+    """Raised when lockdown configuration is invalid (Spec §7.4, fails closed)."""
+
+
 def build_prompt(prompt: str, context_files: list[Path]) -> str:
     parts = [prompt]
     for path in context_files:
