@@ -207,4 +207,50 @@ describe("BlockersPage", () => {
       expect(screen.getByText("Missing Spec")).toBeInTheDocument(),
     );
   });
+
+  it("moves focus to the resolved section after successful submit", async () => {
+    const resolved = { ...BLOCKER, status: "resolved", resolution_response: "Show a message." };
+    mockGet.mockResolvedValueOnce(BLOCKERS_RESPONSE);
+    mockPost.mockResolvedValueOnce(resolved);
+    render(<BlockersPage />);
+    await waitFor(() => screen.getByRole("textbox", { name: "Your response" }));
+
+    act(() => {
+      fireEvent.change(screen.getByRole("textbox", { name: "Your response" }), {
+        target: { value: "Show a message." },
+      });
+    });
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Send response" }));
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText("Blocker resolved — your response has been submitted"),
+      ).toHaveFocus(),
+    );
+  });
+
+  it("resolved section has accessible label for screen reader announcement", async () => {
+    const resolved = { ...BLOCKER, status: "resolved", resolution_response: "Show a message." };
+    mockGet.mockResolvedValueOnce(BLOCKERS_RESPONSE);
+    mockPost.mockResolvedValueOnce(resolved);
+    render(<BlockersPage />);
+    await waitFor(() => screen.getByRole("textbox", { name: "Your response" }));
+
+    act(() => {
+      fireEvent.change(screen.getByRole("textbox", { name: "Your response" }), {
+        target: { value: "Show a message." },
+      });
+    });
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Send response" }));
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText("Blocker resolved — your response has been submitted"),
+      ).toBeInTheDocument(),
+    );
+  });
 });
