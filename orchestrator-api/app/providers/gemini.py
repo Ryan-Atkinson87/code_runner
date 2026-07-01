@@ -27,6 +27,7 @@ from app.providers.types import (
     SessionRole,
     UsageReport,
 )
+from app.providers.utils import build_prompt, derive_artifacts
 
 _BLOCKED_PHRASES = (
     "i need human input",
@@ -54,7 +55,7 @@ class GeminiAdapter(ProviderAdapter):
         prompt: str,
         context_files: list[Path],
     ) -> SessionResult:
-        full_prompt = _build_prompt(prompt, context_files)
+        full_prompt = build_prompt(prompt, context_files)
         cmd = [
             "gemini",
             "-p",
@@ -95,7 +96,7 @@ class GeminiAdapter(ProviderAdapter):
         if result.returncode != 0 and outcome == SessionOutcome.COMPLETED:
             outcome = SessionOutcome.ERROR
 
-        artifacts = await _derive_artifacts(repo, head_before)
+        artifacts = await derive_artifacts(repo, head_before)
 
         return SessionResult(
             events=events,
@@ -109,14 +110,6 @@ class GeminiAdapter(ProviderAdapter):
             outcome=outcome,
             artifacts=artifacts,
         )
-
-
-def _build_prompt(prompt: str, context_files: list[Path]) -> str:
-    parts = [prompt]
-    for path in context_files:
-        if path.exists():
-            parts.append(f"\n\n--- {path.name} ---\n{path.read_text(encoding='utf-8')}")
-    return "\n".join(parts)
 
 
 def _parse_output(
@@ -196,28 +189,3 @@ def _is_blocked(content: str) -> bool:
     return any(phrase in lowered for phrase in _BLOCKED_PHRASES)
 
 
-async def _derive_artifacts(repo: GitRepo, head_before: str) -> list[str]:
-    changed: set[str] = set()
-
-    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(args, cwd=repo.path, capture_output=True, text=True)
-
-    result = await asyncio.to_thread(run, ["git", "diff", "--name-only"])
-    if result.stdout.strip():
-        changed.update(result.stdout.strip().split("\n"))
-
-    result = await asyncio.to_thread(run, ["git", "diff", "--cached", "--name-only"])
-    if result.stdout.strip():
-        changed.update(result.stdout.strip().split("\n"))
-
-    head_now = repo.rev_parse("HEAD")
-    if head_now != head_before:
-        result = await asyncio.to_thread(run, ["git", "diff", "--name-only", head_before, head_now])
-        if result.stdout.strip():
-            changed.update(result.stdout.strip().split("\n"))
-
-    result = await asyncio.to_thread(run, ["git", "ls-files", "--others", "--exclude-standard"])
-    if result.stdout.strip():
-        changed.update(result.stdout.strip().split("\n"))
-
-    return sorted(changed)
