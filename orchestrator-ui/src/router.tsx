@@ -1,6 +1,7 @@
 import { Outlet, createBrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import { LoginPage } from "./auth/LoginPage";
+import { BlockersPage } from "./blockers/BlockersPage";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LiveProgressPage } from "./progress/LiveProgressPage";
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
           { path: "runs", element: <RunControlPage /> },
           { path: "progress", element: <LiveProgressPage /> },
           { path: "usage", element: <UsageGaugesPage /> },
+          { path: "blockers", element: <BlockersPage /> },
         ],
       },
     ],
