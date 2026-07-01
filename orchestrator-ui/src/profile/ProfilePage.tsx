@@ -234,8 +234,7 @@ export function ProfilePage() {
   }
 
   // ---- proposed / confirming / rejecting ----
-  const rawYaml =
-    state.phase === "proposed" ? state.rawYaml : state.rawYaml;
+  const rawYaml = state.rawYaml;
   const actionError = state.phase === "proposed" ? state.actionError : "";
   const isActing = state.phase === "confirming" || state.phase === "rejecting";
 
