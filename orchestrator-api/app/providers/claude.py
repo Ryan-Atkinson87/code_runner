@@ -305,5 +305,3 @@ def _execute_text_editor(tool_input: dict[str, object], workdir: Path) -> str:
         return f"Inserted at line {insert_line} in {rel_path}"
 
     return f"Unknown command: {command}"
-
-

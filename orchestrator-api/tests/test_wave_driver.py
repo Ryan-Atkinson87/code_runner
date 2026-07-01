@@ -706,3 +706,115 @@ class TestSocialContextWiring:
         assert len(completed) == 1
         assert len(result.prs) == 1
         mock_updater.update.assert_called_once_with("wave-1")
+
+
+class TestResolveModel:
+    def test_implementing_phase_returns_implementing_field(self) -> None:
+        from app.config.schema import ProviderModels
+        from app.engine.wave_driver import _resolve_model
+
+        models = ProviderModels(implementing="codex-mini", reviewing="o4-mini")
+        assert _resolve_model(models, "implementing", "fallback") == "codex-mini"
+
+    def test_reviewing_phase_returns_reviewing_field(self) -> None:
+        from app.config.schema import ProviderModels
+        from app.engine.wave_driver import _resolve_model
+
+        models = ProviderModels(implementing="codex-mini", reviewing="o4-mini")
+        assert _resolve_model(models, "reviewing", "fallback") == "o4-mini"
+
+    def test_none_models_returns_fallback(self) -> None:
+        from app.engine.wave_driver import _resolve_model
+
+        assert _resolve_model(None, "implementing", "default-model") == "default-model"
+
+    def test_empty_implementing_falls_back(self) -> None:
+        from app.config.schema import ProviderModels
+        from app.engine.wave_driver import _resolve_model
+
+        models = ProviderModels(implementing="", reviewing="o4-mini")
+        assert _resolve_model(models, "implementing", "fallback") == "fallback"
+
+    def test_empty_reviewing_falls_back(self) -> None:
+        from app.config.schema import ProviderModels
+        from app.engine.wave_driver import _resolve_model
+
+        models = ProviderModels(implementing="codex-mini", reviewing="")
+        assert _resolve_model(models, "reviewing", "fallback") == "fallback"
+
+
+class TestWaveDriverProviderParam:
+    @pytest.mark.asyncio
+    async def test_provider_param_passed_to_renderer(self, tmp_path: Path) -> None:
+        """The provider param — not project_config.provider.default — drives rendering."""
+        repo_path = _init_repo(tmp_path)
+        conn = _init_db()
+
+        wave = WaveAssemblyResult(ordered_issues=[], unplanned=False)
+
+        captured_provider: list[str] = []
+
+        def _capture_provider(**kwargs: object) -> dict[str, object]:
+            captured_provider.append(str(kwargs.get("provider", "")))
+            return {}
+
+        with (
+            patch("app.engine.wave_driver.compose_and_render", side_effect=_capture_provider),
+            patch("app.git.agent_branch.AgentBranch.create_or_reuse", return_value=True),
+        ):
+            result = await run_wave(
+                wave=wave,
+                project_config=_project_config(),
+                profile=_profile(),
+                adapter=AsyncMock(),
+                handoff_engine=MagicMock(),
+                db_conn=conn,
+                repo_paths={"test-repo": repo_path},
+                skills=[],
+                base_prompts=BASE_PROMPTS,
+                overlays=[],
+                model="gemini-pro",
+                wave_name="wave-1",
+                run_id=1,
+                provider="gemini",
+            )
+
+        assert len(captured_provider) == 1
+        assert captured_provider[0] == "gemini"
+        assert isinstance(result, WaveResult)
+
+    @pytest.mark.asyncio
+    async def test_provider_defaults_to_claude(self, tmp_path: Path) -> None:
+        """Omitting provider defaults the renderer to claude (backward compat)."""
+        repo_path = _init_repo(tmp_path)
+        conn = _init_db()
+
+        wave = WaveAssemblyResult(ordered_issues=[], unplanned=False)
+
+        captured_provider: list[str] = []
+
+        def _capture_provider(**kwargs: object) -> dict[str, object]:
+            captured_provider.append(str(kwargs.get("provider", "")))
+            return {}
+
+        with (
+            patch("app.engine.wave_driver.compose_and_render", side_effect=_capture_provider),
+            patch("app.git.agent_branch.AgentBranch.create_or_reuse", return_value=True),
+        ):
+            await run_wave(
+                wave=wave,
+                project_config=_project_config(),
+                profile=_profile(),
+                adapter=AsyncMock(),
+                handoff_engine=MagicMock(),
+                db_conn=conn,
+                repo_paths={"test-repo": repo_path},
+                skills=[],
+                base_prompts=BASE_PROMPTS,
+                overlays=[],
+                model="claude-sonnet-4-6",
+                wave_name="wave-1",
+                run_id=1,
+            )
+
+        assert captured_provider[0] == "claude"

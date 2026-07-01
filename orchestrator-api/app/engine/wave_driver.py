@@ -7,7 +7,7 @@ from pathlib import Path
 
 from app.blockers.models import BlockerType
 from app.blockers.store import BlockerStore
-from app.config.schema import ProjectConfig
+from app.config.schema import ProjectConfig, ProviderModels
 from app.engine.escalation import EscalationResult, blocker_type_for_outcome, escalate
 from app.engine.implement_loop import (
     BlockerRecord,
@@ -31,6 +31,7 @@ from app.personas.models import Overlay, PersonaType
 from app.profile.schema import ExecutionProfile
 from app.providers.adapter import ProviderAdapter
 from app.providers.hooks import CODING_TOOLS
+from app.providers.types import ProviderName
 from app.renderer.base import RenderedOutput
 from app.renderer.pipeline import compose_and_render
 from app.skills.models import Skill
@@ -73,6 +74,8 @@ async def run_wave(
     model: str,
     wave_name: str,
     run_id: int,
+    provider: ProviderName = "claude",
+    provider_models: ProviderModels | None = None,
     cap: int | None = None,
     blocker_store: BlockerStore | None = None,
     dispatcher: Dispatcher | None = None,
@@ -107,7 +110,6 @@ async def run_wave(
         repos[repo_entry.name] = repo
         agent_branches[repo_entry.name] = ab
 
-    provider = project_config.provider.default
     rendered_per_persona = compose_and_render(
         profile=profile,
         skills=skills,
@@ -120,6 +122,9 @@ async def run_wave(
     review_key = _find_persona_key(rendered_per_persona, "reviewer")
     impl_rendered = rendered_per_persona.get(impl_key, RenderedOutput())
     review_rendered = rendered_per_persona.get(review_key, RenderedOutput())
+
+    impl_model = _resolve_model(provider_models, "implementing", model)
+    review_model = _resolve_model(provider_models, "reviewing", model)
 
     repo_entries_by_name = {r.name: r for r in project_config.repos}
     allowed_tools = list(CODING_TOOLS)
@@ -158,7 +163,7 @@ async def run_wave(
             rendered_output=impl_rendered,
             marker_store=marker_store,
             run_id=run_id,
-            model=model,
+            model=impl_model,
             allowed_tools=allowed_tools,
             wave_name=wave_name,
             capture_writer=capture_writer,
@@ -199,7 +204,7 @@ async def run_wave(
             marker_store=marker_store,
             merge_queue=merge_queue,
             run_id=run_id,
-            model=model,
+            model=review_model,
             allowed_tools=allowed_tools,
             wave_name=wave_name,
             capture_writer=capture_writer,
@@ -293,6 +298,17 @@ async def run_wave(
         parked_blockers=parked,
         escalation_results=escalation_results,
     )
+
+
+def _resolve_model(models: ProviderModels | None, phase: str, fallback: str) -> str:
+    """Return the per-phase model string from provider_models, or fallback if unset.
+
+    phase is "implementing" or "reviewing" — matches ProviderModels field names.
+    """
+    if models is None:
+        return fallback
+    value = getattr(models, phase, "")
+    return value or fallback
 
 
 def _find_persona_key(rendered: dict[str, RenderedOutput], type_prefix: str) -> str:
