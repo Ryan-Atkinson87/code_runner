@@ -29,6 +29,11 @@ export function EmptyState({
   action?: ReactNode;
   className?: string;
 }) {
+  if (import.meta.env.DEV && action === undefined) {
+    console.warn(
+      "[EmptyState] No action provided — baseline-ui MUST: give empty states one clear next action.",
+    );
+  }
   return (
     <div
       className={cn(
