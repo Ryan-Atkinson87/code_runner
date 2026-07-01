@@ -44,6 +44,8 @@ const PAUSED_RUN = {
   run: { ...ACTIVE_RUN.run, status: "paused" as const },
 };
 
+const DEFAULT_PROVIDERS = { providers: ["claude", "codex", "gemini"] };
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(window, "confirm").mockReturnValue(true);
@@ -67,7 +69,8 @@ describe("RunControlPage", () => {
   it("shows start form with only open waves", async () => {
     mockGet
       .mockResolvedValueOnce({ waves: [...OPEN_WAVES, ...CLOSED_WAVES] })
-      .mockResolvedValueOnce(NO_RUN);
+      .mockResolvedValueOnce(NO_RUN)
+      .mockResolvedValueOnce(DEFAULT_PROVIDERS);
     render(<RunControlPage />);
     await waitFor(() =>
       expect(screen.getByLabelText("Wave")).toBeInTheDocument(),
@@ -82,6 +85,7 @@ describe("RunControlPage", () => {
     mockGet
       .mockResolvedValueOnce({ waves: CLOSED_WAVES })
       .mockResolvedValueOnce(NO_RUN)
+      .mockResolvedValueOnce(DEFAULT_PROVIDERS)
       .mockResolvedValueOnce({});
     render(<RunControlPage />);
     await waitFor(() =>
@@ -96,6 +100,7 @@ describe("RunControlPage", () => {
     mockGet
       .mockResolvedValueOnce({ waves: CLOSED_WAVES })
       .mockResolvedValueOnce(NO_RUN)
+      .mockResolvedValueOnce(DEFAULT_PROVIDERS)
       .mockResolvedValueOnce({ github_url: "https://github.com/owner/repo" });
     render(<RunControlPage />);
     await waitFor(() =>
@@ -111,16 +116,34 @@ describe("RunControlPage", () => {
     mockGet
       .mockResolvedValueOnce({ waves: CLOSED_WAVES })
       .mockResolvedValueOnce(NO_RUN)
+      .mockResolvedValueOnce(DEFAULT_PROVIDERS)
       .mockResolvedValueOnce({});
     render(<RunControlPage />);
     await waitFor(() => screen.getByText(/No open waves available/));
     expect(screen.queryByRole("link", { name: /milestones/i })).not.toBeInTheDocument();
   });
 
+  it("shows dynamically loaded providers in the provider select", async () => {
+    mockGet
+      .mockResolvedValueOnce({ waves: OPEN_WAVES })
+      .mockResolvedValueOnce(NO_RUN)
+      .mockResolvedValueOnce({ providers: ["claude", "codex", "gemini", "gpt4"] });
+    render(<RunControlPage />);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Provider")).toBeInTheDocument(),
+    );
+    const select = screen.getByLabelText("Provider");
+    expect(select).toHaveTextContent("claude");
+    expect(select).toHaveTextContent("codex");
+    expect(select).toHaveTextContent("gemini");
+    expect(select).toHaveTextContent("gpt4");
+  });
+
   it("calls POST /runs/start with selected wave and provider", async () => {
     mockGet
       .mockResolvedValueOnce({ waves: OPEN_WAVES })
-      .mockResolvedValueOnce(NO_RUN);
+      .mockResolvedValueOnce(NO_RUN)
+      .mockResolvedValueOnce(DEFAULT_PROVIDERS);
     mockPost.mockResolvedValueOnce(ACTIVE_RUN.run);
 
     render(<RunControlPage />);
@@ -147,7 +170,8 @@ describe("RunControlPage", () => {
   it("shows active run panel when a run is running", async () => {
     mockGet
       .mockResolvedValueOnce({ waves: OPEN_WAVES })
-      .mockResolvedValueOnce(ACTIVE_RUN);
+      .mockResolvedValueOnce(ACTIVE_RUN)
+      .mockResolvedValueOnce(DEFAULT_PROVIDERS);
     render(<RunControlPage />);
     await waitFor(() =>
       expect(screen.getByText("Active Run")).toBeInTheDocument(),
@@ -161,7 +185,8 @@ describe("RunControlPage", () => {
   it("requires confirm before pausing", async () => {
     mockGet
       .mockResolvedValueOnce({ waves: OPEN_WAVES })
-      .mockResolvedValueOnce(ACTIVE_RUN);
+      .mockResolvedValueOnce(ACTIVE_RUN)
+      .mockResolvedValueOnce(DEFAULT_PROVIDERS);
     mockPost.mockResolvedValueOnce(PAUSED_RUN.run);
 
     render(<RunControlPage />);
@@ -176,7 +201,8 @@ describe("RunControlPage", () => {
   it("requires confirm before stopping", async () => {
     mockGet
       .mockResolvedValueOnce({ waves: OPEN_WAVES })
-      .mockResolvedValueOnce(ACTIVE_RUN);
+      .mockResolvedValueOnce(ACTIVE_RUN)
+      .mockResolvedValueOnce(DEFAULT_PROVIDERS);
     mockPost.mockResolvedValueOnce({ ...ACTIVE_RUN.run, status: "stopped" });
 
     render(<RunControlPage />);
@@ -191,7 +217,8 @@ describe("RunControlPage", () => {
   it("resumes without confirm dialog", async () => {
     mockGet
       .mockResolvedValueOnce({ waves: OPEN_WAVES })
-      .mockResolvedValueOnce(PAUSED_RUN);
+      .mockResolvedValueOnce(PAUSED_RUN)
+      .mockResolvedValueOnce(DEFAULT_PROVIDERS);
     mockPost.mockResolvedValueOnce(ACTIVE_RUN.run);
 
     render(<RunControlPage />);
@@ -210,7 +237,8 @@ describe("RunControlPage", () => {
   it("shows inline action error on API failure", async () => {
     mockGet
       .mockResolvedValueOnce({ waves: OPEN_WAVES })
-      .mockResolvedValueOnce(ACTIVE_RUN);
+      .mockResolvedValueOnce(ACTIVE_RUN)
+      .mockResolvedValueOnce(DEFAULT_PROVIDERS);
     mockPost.mockRejectedValueOnce(new Error("Server error"));
 
     render(<RunControlPage />);
