@@ -73,7 +73,8 @@ const SSE_BASE_DELAY_MS = 1_000;
 const SSE_MAX_DELAY_MS = 30_000;
 
 /**
- * Open an EventSource to `url` and call `onMessage` for each event.
+ * Open an EventSource to `url` and call `onMessage` for each unnamed event.
+ * Named event types can be handled via the optional `onEvent` map.
  * On error the connection is closed and re-opened with exponential backoff.
  * Returns a cleanup function that permanently closes the connection.
  */
@@ -81,6 +82,7 @@ export function connectSse(
   url: string,
   onMessage: SseHandler,
   onError?: SseErrorHandler,
+  onEvent?: Record<string, SseHandler>,
 ): () => void {
   let es: EventSource | null = null;
   let closed = false;
@@ -95,6 +97,15 @@ export function connectSse(
       delay = SSE_BASE_DELAY_MS;
       onMessage(ev);
     };
+
+    if (onEvent) {
+      for (const [type, handler] of Object.entries(onEvent)) {
+        es.addEventListener(type, (ev: Event) => {
+          delay = SSE_BASE_DELAY_MS;
+          handler(ev as MessageEvent<string>);
+        });
+      }
+    }
 
     es.onerror = (ev: Event) => {
       onError?.(ev);
