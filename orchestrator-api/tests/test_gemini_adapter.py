@@ -11,7 +11,6 @@ import pytest
 
 from app.providers.gemini import (
     GeminiAdapter,
-    LockdownError,
     _build_lockdown_cmd,
     _check_prohibited_ops,
     _is_blocked,
@@ -20,6 +19,7 @@ from app.providers.gemini import (
     _validate_lockdown,
 )
 from app.providers.types import EventKind, NormalisedEvent, SessionOutcome, SessionRole
+from app.providers.utils import LockdownError
 
 
 def _jsonl(*objects: dict) -> str:  # type: ignore[type-arg]
