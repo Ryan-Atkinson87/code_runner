@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -37,6 +38,23 @@ _BLOCKED_PHRASES = (
     "waiting for your response",
 )
 
+# Lockdown: flags that MUST be present in every Codex invocation (Spec §7.4).
+# _validate_lockdown raises LockdownError if any are absent — fails closed.
+_REQUIRED_LOCKDOWN_FLAGS: tuple[str, ...] = ("--sandbox",)
+
+# Patterns matched against raw function_call arguments. Any hit → BLOCKED (Spec §7.5).
+_PROHIBITED_CALL_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"\bgit\s+push\b.+--force"),              # force-push long form
+    re.compile(r"\bgit\s+push\b.+-f\b"),                 # force-push short form
+    re.compile(r"\bgit\s+push\b.+\borigin\b.+\b(?:main|dev)\b"),  # push to main/dev
+    re.compile(r"\.env(?!\.example)\b"),                  # .env secret files
+    re.compile(r"\.github/workflows"),                    # CI/workflow files
+)
+
+
+class LockdownError(Exception):
+    """Raised when lockdown configuration is invalid (Spec §7.4, fails closed)."""
+
 
 class CodexAdapter(ProviderAdapter):
     """Codex CLI provider adapter (Spec §3.1, §3.2).
@@ -56,16 +74,22 @@ class CodexAdapter(ProviderAdapter):
         context_files: list[Path],
     ) -> SessionResult:
         full_prompt = build_prompt(prompt, context_files)
-        cmd = [
-            "codex",
-            "--approval-mode",
-            "full-auto",
-            "--output-format",
-            "json",
-            "--model",
-            model,
-            full_prompt,
-        ]
+        cmd = _build_lockdown_cmd(model, full_prompt)
+
+        try:
+            _validate_lockdown(cmd)
+        except LockdownError as exc:
+            return SessionResult(
+                outcome=SessionOutcome.ERROR,
+                events=[
+                    NormalisedEvent(
+                        kind=EventKind.OUTPUT,
+                        content=f"Lockdown error: {exc}",
+                        timestamp=time.time(),
+                    )
+                ],
+                usage=UsageReport(model=model, duration_seconds=0.0),
+            )
 
         start = time.monotonic()
         repo = GitRepo(workdir)
@@ -97,6 +121,9 @@ class CodexAdapter(ProviderAdapter):
         if result.returncode != 0 and outcome == SessionOutcome.COMPLETED:
             outcome = SessionOutcome.ERROR
 
+        if outcome == SessionOutcome.COMPLETED:
+            outcome = _check_prohibited_ops(events)
+
         artifacts = await derive_artifacts(repo, head_before)
 
         return SessionResult(
@@ -111,6 +138,37 @@ class CodexAdapter(ProviderAdapter):
             outcome=outcome,
             artifacts=artifacts,
         )
+
+
+def _build_lockdown_cmd(model: str, full_prompt: str) -> list[str]:
+    return [
+        "codex",
+        "--approval-mode",
+        "full-auto",
+        "--sandbox",
+        "--output-format",
+        "json",
+        "--model",
+        model,
+        full_prompt,
+    ]
+
+
+def _validate_lockdown(cmd: list[str]) -> None:
+    for flag in _REQUIRED_LOCKDOWN_FLAGS:
+        if flag not in cmd:
+            raise LockdownError(f"Lockdown flag '{flag}' absent — refusing to run unsandboxed")
+
+
+def _check_prohibited_ops(events: list[NormalisedEvent]) -> SessionOutcome:
+    for event in events:
+        if event.kind != EventKind.TOOL_CALL:
+            continue
+        haystack = event.tool_input or ""
+        for pattern in _PROHIBITED_CALL_PATTERNS:
+            if pattern.search(haystack):
+                return SessionOutcome.BLOCKED
+    return SessionOutcome.COMPLETED
 
 
 def _parse_output(

@@ -3,10 +3,23 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-from app.providers.codex import CodexAdapter, _is_blocked, _map_status, _parse_output
-from app.providers.types import EventKind, SessionOutcome
+import pytest
+
+from app.providers.codex import (
+    CodexAdapter,
+    LockdownError,
+    _build_lockdown_cmd,
+    _check_prohibited_ops,
+    _is_blocked,
+    _map_status,
+    _parse_output,
+    _validate_lockdown,
+)
+from app.providers.types import EventKind, NormalisedEvent, SessionOutcome
 
 
 def _jsonl(*objects: dict) -> str:  # type: ignore[type-arg]
@@ -211,6 +224,168 @@ class TestCodexAdapterInterface:
     def test_instantiates_without_args(self) -> None:
         adapter = CodexAdapter()
         assert adapter is not None
+
+
+class TestBuildLockdownCmd:
+    def test_includes_sandbox_flag(self) -> None:
+        cmd = _build_lockdown_cmd("codex-r", "do the thing")
+        assert "--sandbox" in cmd
+
+    def test_includes_full_auto_approval(self) -> None:
+        cmd = _build_lockdown_cmd("codex-r", "do the thing")
+        assert "--approval-mode" in cmd
+        idx = cmd.index("--approval-mode")
+        assert cmd[idx + 1] == "full-auto"
+
+    def test_includes_model(self) -> None:
+        cmd = _build_lockdown_cmd("codex-r", "do the thing")
+        assert "--model" in cmd
+        idx = cmd.index("--model")
+        assert cmd[idx + 1] == "codex-r"
+
+    def test_prompt_is_last_arg(self) -> None:
+        cmd = _build_lockdown_cmd("codex-r", "my prompt")
+        assert cmd[-1] == "my prompt"
+
+
+class TestValidateLockdown:
+    def test_valid_cmd_passes(self) -> None:
+        cmd = _build_lockdown_cmd("codex-r", "prompt")
+        _validate_lockdown(cmd)  # must not raise
+
+    def test_missing_sandbox_raises_lockdown_error(self) -> None:
+        cmd = ["codex", "--approval-mode", "full-auto", "--output-format", "json", "prompt"]
+        with pytest.raises(LockdownError, match="--sandbox"):
+            _validate_lockdown(cmd)
+
+
+class TestCheckProhibitedOps:
+    def _tool_event(self, tool_input: str) -> NormalisedEvent:
+        return NormalisedEvent(
+            kind=EventKind.TOOL_CALL,
+            tool_name="shell",
+            tool_input=tool_input,
+            timestamp=0.0,
+        )
+
+    def test_force_push_long_form_blocked(self) -> None:
+        events = [self._tool_event('{"cmd":"git push --force origin feature"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.BLOCKED
+
+    def test_force_push_short_form_blocked(self) -> None:
+        events = [self._tool_event('{"cmd":"git push -f origin feature"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.BLOCKED
+
+    def test_push_to_main_blocked(self) -> None:
+        events = [self._tool_event('{"cmd":"git push origin main"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.BLOCKED
+
+    def test_push_to_dev_blocked(self) -> None:
+        events = [self._tool_event('{"cmd":"git push origin dev"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.BLOCKED
+
+    def test_env_file_access_blocked(self) -> None:
+        events = [self._tool_event('{"cmd":"cat .env"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.BLOCKED
+
+    def test_env_example_not_blocked(self) -> None:
+        events = [self._tool_event('{"cmd":"cat .env.example"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.COMPLETED
+
+    def test_ci_workflow_edit_blocked(self) -> None:
+        events = [self._tool_event('{"cmd":"nano .github/workflows/ci.yml"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.BLOCKED
+
+    def test_safe_push_to_feature_not_blocked(self) -> None:
+        events = [self._tool_event('{"cmd":"git push origin feature/my-branch"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.COMPLETED
+
+    def test_non_tool_events_ignored(self) -> None:
+        output_event = NormalisedEvent(
+            kind=EventKind.OUTPUT,
+            content="git push --force origin main",
+            timestamp=0.0,
+        )
+        assert _check_prohibited_ops([output_event]) == SessionOutcome.COMPLETED
+
+    def test_empty_events_not_blocked(self) -> None:
+        assert _check_prohibited_ops([]) == SessionOutcome.COMPLETED
+
+
+class TestCodexLockdownIntegration:
+    def _setup_git_repo(self, tmp_path: Path) -> Path:
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@test.com"],
+            cwd=tmp_path,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test"],
+            cwd=tmp_path,
+            capture_output=True,
+        )
+        (tmp_path / "existing.py").write_text("x = 1")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True)
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_sandbox_flag_present_on_every_invocation(self, tmp_path: Path) -> None:
+        workdir = self._setup_git_repo(tmp_path)
+        captured_cmd: list[str] = []
+
+        def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
+            captured_cmd.extend(cmd)
+            result = MagicMock()
+            result.stdout = '{"type":"done","status":"success"}\n'
+            result.returncode = 0
+            return result
+
+        adapter = CodexAdapter()
+        with patch("app.providers.codex.subprocess.run", side_effect=fake_run):
+            from app.providers.types import SessionRole
+
+            await adapter.run_session(
+                workdir=workdir,
+                role=SessionRole.IMPLEMENTOR,
+                model="codex-r",
+                allowed_tools=[],
+                prompt="do something",
+                context_files=[],
+            )
+
+        assert "--sandbox" in captured_cmd
+
+    @pytest.mark.asyncio
+    async def test_prohibited_op_in_output_returns_blocked(self, tmp_path: Path) -> None:
+        workdir = self._setup_git_repo(tmp_path)
+        output = (
+            '{"type":"function_call","call_id":"c1","name":"shell",'
+            '"arguments":"{\\"cmd\\":\\"git push --force origin main\\"}"}\n'
+            '{"type":"done","status":"success"}\n'
+        )
+
+        def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
+            result = MagicMock()
+            result.stdout = output
+            result.returncode = 0
+            return result
+
+        adapter = CodexAdapter()
+        with patch("app.providers.codex.subprocess.run", side_effect=fake_run):
+            from app.providers.types import SessionRole
+
+            result = await adapter.run_session(
+                workdir=workdir,
+                role=SessionRole.IMPLEMENTOR,
+                model="codex-r",
+                allowed_tools=[],
+                prompt="force push",
+                context_files=[],
+            )
+
+        assert result.outcome == SessionOutcome.BLOCKED
 
 
 class TestNoProviderSdkImports:
