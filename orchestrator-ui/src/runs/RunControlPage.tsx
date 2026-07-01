@@ -47,6 +47,7 @@ type PageState =
   | {
       phase: "ready";
       waves: Wave[];
+      providers: string[];
       run: RunState | null;
       actionError: string | null;
       acting: boolean;
@@ -54,7 +55,7 @@ type PageState =
 
 type PageAction =
   | { type: "reset" }
-  | { type: "loaded"; waves: Wave[]; run: RunState | null }
+  | { type: "loaded"; waves: Wave[]; providers: string[]; run: RunState | null }
   | { type: "load_error"; message: string }
   | { type: "action_start" }
   | { type: "action_done"; run: RunState | null }
@@ -69,6 +70,7 @@ function reducer(state: PageState, action: PageAction): PageState {
       return {
         phase: "ready",
         waves: action.waves,
+        providers: action.providers,
         run: action.run,
         actionError: null,
         acting: false,
@@ -93,8 +95,6 @@ function reducer(state: PageState, action: PageAction): PageState {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const PROVIDERS = ["claude", "codex", "gemini"] as const;
 
 const STATUS_COLORS: Record<RunStatus, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -142,15 +142,21 @@ export function RunControlPage() {
   const load = useCallback(async (signal?: AbortSignal) => {
     dispatch({ type: "reset" });
     try {
-      const [wavesRes, statusRes] = await Promise.all([
+      const [wavesRes, statusRes, providersRes] = await Promise.all([
         apiClient.get<{ waves: Wave[] }>("/runs/waves", signal),
         apiClient.get<{ active: boolean; run: RunState | null }>(
           "/runs/status",
           signal,
         ),
+        apiClient.get<{ providers: string[] }>("/config/providers", signal),
       ]);
       if (signal?.aborted) return;
-      dispatch({ type: "loaded", waves: wavesRes.waves, run: statusRes.run });
+      dispatch({
+        type: "loaded",
+        waves: wavesRes.waves,
+        providers: providersRes.providers,
+        run: statusRes.run,
+      });
     } catch (err) {
       if (signal?.aborted) return;
       dispatch({
@@ -183,7 +189,7 @@ export function RunControlPage() {
   if (state.phase === "error")
     return <ErrorState message={state.message} retry={() => void load()} />;
 
-  const { waves, run, actionError, acting } = state;
+  const { waves, providers, run, actionError, acting } = state;
   const isActive = run !== null && isActionableStatus(run.status);
   const openWaves = waves.filter((w) => w.state === "open");
 
@@ -412,7 +418,7 @@ export function RunControlPage() {
                   defaultValue="claude"
                   className="w-full rounded border border-gray-300 px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                 >
-                  {PROVIDERS.map((p) => (
+                  {providers.map((p) => (
                     <option key={p} value={p}>
                       {p}
                     </option>
