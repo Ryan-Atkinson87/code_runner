@@ -325,7 +325,7 @@ export function UsageGaugesPage() {
           </span>
         </div>
         {overrideError && (
-          <p role="alert" className="mt-2 text-xs text-red-600">
+          <p role="alert" className="mt-2 text-xs text-red-700">
             {overrideError}
           </p>
         )}
