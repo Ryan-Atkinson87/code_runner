@@ -3,10 +3,23 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-from app.providers.gemini import GeminiAdapter, _is_blocked, _map_status, _parse_output
-from app.providers.types import EventKind, SessionOutcome
+import pytest
+
+from app.providers.gemini import (
+    GeminiAdapter,
+    LockdownError,
+    _build_lockdown_cmd,
+    _check_prohibited_ops,
+    _is_blocked,
+    _map_status,
+    _parse_output,
+    _validate_lockdown,
+)
+from app.providers.types import EventKind, NormalisedEvent, SessionOutcome, SessionRole
 
 
 def _jsonl(*objects: dict) -> str:  # type: ignore[type-arg]
@@ -180,6 +193,192 @@ class TestIsBlocked:
 
     def test_cannot_proceed_without(self) -> None:
         assert _is_blocked("I cannot proceed without more context.")
+
+
+class TestBuildLockdownCmd:
+    def test_includes_sandbox_flag(self) -> None:
+        cmd = _build_lockdown_cmd("gemini-2.5-pro", "do the thing", SessionRole.IMPLEMENTOR)
+        assert "--sandbox" in cmd
+
+    def test_implementor_has_no_readonly(self) -> None:
+        cmd = _build_lockdown_cmd("gemini-2.5-pro", "do the thing", SessionRole.IMPLEMENTOR)
+        assert "--readonly" not in cmd
+
+    def test_orchestrator_has_readonly(self) -> None:
+        cmd = _build_lockdown_cmd("gemini-2.5-pro", "plan this", SessionRole.ORCHESTRATOR)
+        assert "--readonly" in cmd
+
+    def test_includes_model(self) -> None:
+        cmd = _build_lockdown_cmd("gemini-2.5-pro", "prompt", SessionRole.IMPLEMENTOR)
+        assert "--model" in cmd
+        idx = cmd.index("--model")
+        assert cmd[idx + 1] == "gemini-2.5-pro"
+
+    def test_prompt_is_after_p_flag(self) -> None:
+        cmd = _build_lockdown_cmd("gemini-2.5-pro", "my prompt", SessionRole.IMPLEMENTOR)
+        idx = cmd.index("-p")
+        assert cmd[idx + 1] == "my prompt"
+
+
+class TestValidateLockdown:
+    def test_valid_cmd_passes(self) -> None:
+        cmd = _build_lockdown_cmd("gemini-2.5-pro", "prompt", SessionRole.IMPLEMENTOR)
+        _validate_lockdown(cmd)  # must not raise
+
+    def test_missing_sandbox_raises_lockdown_error(self) -> None:
+        cmd = ["gemini", "-p", "prompt", "--output-format", "json"]
+        with pytest.raises(LockdownError, match="--sandbox"):
+            _validate_lockdown(cmd)
+
+
+class TestCheckProhibitedOps:
+    def _tool_event(self, tool_input: str) -> NormalisedEvent:
+        return NormalisedEvent(
+            kind=EventKind.TOOL_CALL,
+            tool_name="run_code",
+            tool_input=tool_input,
+            timestamp=0.0,
+        )
+
+    def test_force_push_long_form_blocked(self) -> None:
+        events = [self._tool_event('{"language":"bash","code":"git push --force origin feature"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.BLOCKED
+
+    def test_force_push_short_form_blocked(self) -> None:
+        events = [self._tool_event('{"language":"bash","code":"git push -f origin feature"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.BLOCKED
+
+    def test_push_to_main_blocked(self) -> None:
+        events = [self._tool_event('{"language":"bash","code":"git push origin main"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.BLOCKED
+
+    def test_push_to_dev_blocked(self) -> None:
+        events = [self._tool_event('{"language":"bash","code":"git push origin dev"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.BLOCKED
+
+    def test_env_file_access_blocked(self) -> None:
+        events = [self._tool_event('{"language":"bash","code":"cat .env"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.BLOCKED
+
+    def test_env_example_not_blocked(self) -> None:
+        events = [self._tool_event('{"language":"bash","code":"cat .env.example"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.COMPLETED
+
+    def test_ci_workflow_edit_blocked(self) -> None:
+        events = [self._tool_event('{"language":"bash","code":"vim .github/workflows/ci.yml"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.BLOCKED
+
+    def test_safe_push_to_feature_not_blocked(self) -> None:
+        events = [self._tool_event('{"language":"bash","code":"git push origin feature/new"}')]
+        assert _check_prohibited_ops(events) == SessionOutcome.COMPLETED
+
+    def test_non_tool_events_ignored(self) -> None:
+        output_event = NormalisedEvent(
+            kind=EventKind.OUTPUT,
+            content="git push --force origin main",
+            timestamp=0.0,
+        )
+        assert _check_prohibited_ops([output_event]) == SessionOutcome.COMPLETED
+
+    def test_empty_events_not_blocked(self) -> None:
+        assert _check_prohibited_ops([]) == SessionOutcome.COMPLETED
+
+
+class TestGeminiLockdownIntegration:
+    def _setup_git_repo(self, tmp_path: Path) -> Path:
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@test.com"],
+            cwd=tmp_path,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test"],
+            cwd=tmp_path,
+            capture_output=True,
+        )
+        (tmp_path / "existing.py").write_text("x = 1")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True)
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_sandbox_flag_present_on_every_invocation(self, tmp_path: Path) -> None:
+        workdir = self._setup_git_repo(tmp_path)
+        captured_cmd: list[str] = []
+
+        def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
+            captured_cmd.extend(cmd)
+            result = MagicMock()
+            result.stdout = '{"type":"done","status":"completed"}\n'
+            result.returncode = 0
+            return result
+
+        adapter = GeminiAdapter()
+        with patch("app.providers.gemini.subprocess.run", side_effect=fake_run):
+            await adapter.run_session(
+                workdir=workdir,
+                role=SessionRole.IMPLEMENTOR,
+                model="gemini-2.5-pro",
+                allowed_tools=[],
+                prompt="do something",
+                context_files=[],
+            )
+
+        assert "--sandbox" in captured_cmd
+
+    @pytest.mark.asyncio
+    async def test_orchestrator_readonly_flag_present(self, tmp_path: Path) -> None:
+        workdir = self._setup_git_repo(tmp_path)
+        captured_cmd: list[str] = []
+
+        def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
+            captured_cmd.extend(cmd)
+            result = MagicMock()
+            result.stdout = '{"type":"done","status":"completed"}\n'
+            result.returncode = 0
+            return result
+
+        adapter = GeminiAdapter()
+        with patch("app.providers.gemini.subprocess.run", side_effect=fake_run):
+            await adapter.run_session(
+                workdir=workdir,
+                role=SessionRole.ORCHESTRATOR,
+                model="gemini-2.5-pro",
+                allowed_tools=[],
+                prompt="plan this",
+                context_files=[],
+            )
+
+        assert "--readonly" in captured_cmd
+
+    @pytest.mark.asyncio
+    async def test_prohibited_op_in_output_returns_blocked(self, tmp_path: Path) -> None:
+        workdir = self._setup_git_repo(tmp_path)
+        output = (
+            '{"type":"tool_call","name":"run_code",'
+            '"input":{"language":"bash","code":"git push --force origin main"}}\n'
+            '{"type":"done","status":"completed"}\n'
+        )
+
+        def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
+            result = MagicMock()
+            result.stdout = output
+            result.returncode = 0
+            return result
+
+        adapter = GeminiAdapter()
+        with patch("app.providers.gemini.subprocess.run", side_effect=fake_run):
+            result = await adapter.run_session(
+                workdir=workdir,
+                role=SessionRole.IMPLEMENTOR,
+                model="gemini-2.5-pro",
+                allowed_tools=[],
+                prompt="force push",
+                context_files=[],
+            )
+
+        assert result.outcome == SessionOutcome.BLOCKED
 
 
 class TestGeminiAdapterInterface:
