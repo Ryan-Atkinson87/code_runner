@@ -3,6 +3,7 @@ import { AuthProvider } from "./auth/AuthContext";
 import { LoginPage } from "./auth/LoginPage";
 import { BlockersPage } from "./blockers/BlockersPage";
 import { Layout } from "./components/Layout";
+import { PrsPage } from "./prs/PrsPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LiveProgressPage } from "./progress/LiveProgressPage";
 import { RunControlPage } from "./runs/RunControlPage";
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
           { path: "progress", element: <LiveProgressPage /> },
           { path: "usage", element: <UsageGaugesPage /> },
           { path: "blockers", element: <BlockersPage /> },
+          { path: "prs", element: <PrsPage /> },
         ],
       },
     ],
