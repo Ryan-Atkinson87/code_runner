@@ -252,10 +252,10 @@ function BlockerCard({ blocker, form, onTextChange, onSubmit }: CardProps) {
             disabled={form.status === "submitting"}
             required
             placeholder={blocker.needed_to_unblock}
-            className="mb-2 w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
+            className="mb-2 w-full rounded border border-gray-300 px-2 py-1.5 text-base sm:text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
           />
           {form.status === "error" && (
-            <p role="alert" className="mb-2 text-xs text-red-600">
+            <p role="alert" className="mb-2 text-xs text-red-700">
               {form.message}
             </p>
           )}
