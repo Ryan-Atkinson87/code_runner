@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import { ApiError, apiClient } from "../api";
 import {
   EmptyState,
@@ -167,6 +167,14 @@ interface CardProps {
 
 function BlockerCard({ blocker, form, onTextChange, onSubmit }: CardProps) {
   const resolved = blocker.status === "resolved" || form.status === "success";
+  const resolutionRef = useRef<HTMLDivElement>(null);
+
+  // Move focus to the resolved section so keyboard/SR users don't lose their place.
+  useEffect(() => {
+    if (form.status === "success") {
+      resolutionRef.current?.focus();
+    }
+  }, [form.status]);
 
   return (
     <article
@@ -213,7 +221,12 @@ function BlockerCard({ blocker, form, onTextChange, onSubmit }: CardProps) {
 
       {/* Resolution area */}
       {resolved ? (
-        <div className="rounded border border-green-200 bg-white px-3 py-2 text-sm text-gray-700">
+        <div
+          ref={resolutionRef}
+          tabIndex={-1}
+          aria-label="Blocker resolved — your response has been submitted"
+          className="rounded border border-green-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-indigo-500"
+        >
           <span className="font-medium text-green-700">Response: </span>
           {blocker.resolution_response ?? (form.status === "success" ? form.resolution : "")}
         </div>
