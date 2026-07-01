@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from argon2 import PasswordHasher
@@ -363,3 +363,102 @@ class TestRunController:
 
         restarted = RunController(conn=db_conn, project_name="proj", repo_name="repo")
         assert restarted.get_active_run() is None
+
+    def test_active_task_property_initially_none(self, controller: RunController) -> None:
+        assert controller.active_task is None
+
+    def test_set_active_task_exposed_via_property(self, controller: RunController) -> None:
+        import asyncio
+
+        async def _noop() -> None:
+            pass
+
+        async def _run() -> None:
+            task = asyncio.create_task(_noop())
+            controller.set_active_task(task)
+            assert controller.active_task is task
+            await task
+
+        asyncio.run(_run())
+
+
+class TestMonitorSwitch:
+    @pytest.fixture()
+    def mock_monitor(self) -> MagicMock:
+        m = MagicMock()
+        m.reader = MagicMock()
+        return m
+
+    @pytest.fixture()
+    def authed_client_with_monitor(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        controller: RunController,
+        mock_monitor: MagicMock,
+    ) -> TestClient:
+        monkeypatch.setenv("AUTH_PASSWORD_HASH", _TEST_HASH)
+        monkeypatch.setattr(auth_router_mod, "_login_limiter", RateLimiter())
+        app = create_app(
+            Settings(),
+            session_store=SessionStore(),
+            run_controller=controller,
+            usage_monitor=mock_monitor,  # type: ignore[arg-type]
+        )
+        client = TestClient(app, base_url="https://testserver")
+        client.post("/login", json={"password": _TEST_PASSWORD})
+        return client
+
+    def test_switch_reader_called_on_start(
+        self, authed_client_with_monitor: TestClient, mock_monitor: MagicMock
+    ) -> None:
+        authed_client_with_monitor.post(
+            "/runs/start", json={"wave": "test-wave", "provider": "codex"}
+        )
+        mock_monitor.switch_reader.assert_called_once()
+        call_args = mock_monitor.switch_reader.call_args
+        assert call_args[0][1] == "codex"
+
+    def test_switch_reader_uses_correct_provider(
+        self, authed_client_with_monitor: TestClient, mock_monitor: MagicMock
+    ) -> None:
+        authed_client_with_monitor.post("/runs/start", json={"wave": "test", "provider": "gemini"})
+        provider_arg = mock_monitor.switch_reader.call_args[0][1]
+        assert provider_arg == "gemini"
+
+
+class TestWaveDispatch:
+    @pytest.fixture()
+    def authed_client_with_dispatch(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        controller: RunController,
+    ) -> tuple[TestClient, AsyncMock]:
+        monkeypatch.setenv("AUTH_PASSWORD_HASH", _TEST_HASH)
+        monkeypatch.setattr(auth_router_mod, "_login_limiter", RateLimiter())
+        mock_fn: AsyncMock = AsyncMock()
+        app = create_app(
+            Settings(),
+            session_store=SessionStore(),
+            run_controller=controller,
+            wave_run_fn=mock_fn,
+        )
+        client = TestClient(app, base_url="https://testserver")
+        client.post("/login", json={"password": _TEST_PASSWORD})
+        return client, mock_fn
+
+    def test_active_task_set_after_start(
+        self,
+        authed_client_with_dispatch: tuple[TestClient, AsyncMock],
+        controller: RunController,
+    ) -> None:
+        client, _ = authed_client_with_dispatch
+        resp = client.post("/runs/start", json={"wave": "test", "provider": "claude"})
+        assert resp.status_code == 201
+        assert controller.active_task is not None
+
+    def test_dispatch_not_called_without_wave_fn(
+        self, authed_client: TestClient, controller: RunController
+    ) -> None:
+        resp = authed_client.post("/runs/start", json={"wave": "test"})
+        assert resp.status_code == 201
+        assert controller.active_task is None
