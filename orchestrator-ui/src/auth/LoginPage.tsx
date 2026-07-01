@@ -28,9 +28,9 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex h-dvh items-center justify-center bg-gray-50">
+    <main className="flex h-dvh items-center justify-center bg-gray-50 px-4 sm:px-0">
       <div className="w-full max-w-sm rounded-lg bg-white p-8 shadow">
-        <h1 className="mb-6 text-xl font-semibold text-balance text-gray-900">Code Runner</h1>
+        <h1 className="mb-6 text-balance text-xl font-semibold text-gray-900">Code Runner</h1>
         <form onSubmit={(e) => void handleSubmit(e)} noValidate>
           <div className="mb-4">
             <label
@@ -47,14 +47,14 @@ export function LoginPage() {
               autoComplete="current-password"
               aria-required="true"
               aria-describedby={error ? errorId : undefined}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+              className="w-full rounded border border-gray-300 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-900 sm:py-2 sm:text-sm"
             />
           </div>
           {error && (
             <p
               id={errorId}
               role="alert"
-              className="mb-4 text-sm text-pretty text-red-600"
+              className="mb-4 text-pretty text-sm text-red-600"
             >
               {error}
             </p>
@@ -62,12 +62,12 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={pending}
-            className="w-full rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+            className="w-full rounded bg-gray-900 px-4 py-3 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
           >
             {pending ? "Signing in…" : "Sign in"}
           </button>
         </form>
       </div>
-    </div>
+    </main>
   );
 }
