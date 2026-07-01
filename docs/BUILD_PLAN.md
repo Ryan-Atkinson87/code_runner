@@ -34,7 +34,7 @@ progress and has two parts:
 | 3 | Claude adapter + wave loop | ✅ | 1, 2 |
 | 4 | Usage monitor | ✅ | 3 |
 | 5 | Trackers + notifications | ✅ | 3 |
-| 6 | Observability + UI | 🔄 | 3, 4, 5 |
+| 6 | Observability + UI | ✅ | 3, 4, 5 |
 | 7 | Multi-provider | 🔄 | 3 |
 
 ---
@@ -190,7 +190,7 @@ land — the rest of Phase 5 needs only Phases 1–3. #44 ties into the Phase-3 
 
 Langfuse integration, two-layer logging, efficiency reports; React UI wiring it all together.
 
-**Status:** 🔄 (planned — issues created)
+**Status:** ✅ (complete — milestone closed 2026-07-01)
 
 ### Issues
 
@@ -210,7 +210,7 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [x] #53 — Usage-gauges API: meters, governing meter, 80% line, override switch _(deps: #33, #36, #2)_
 - [x] #54 — Blockers API: list parked blockers and respond inline _(deps: #43, #44, #2)_
 - [x] #55 — PRs API: surface hand-off PRs with bodies and human checklists _(deps: #14, #13, #2)_
-- [ ] #56 — Efficiency-reports API: serve on-demand/wave/month report views _(deps: #50, #2)_
+- [x] #56 — Efficiency-reports API: serve on-demand/wave/month report views _(deps: #50, #2)_
 - [x] #57 — Config + notifications API: read/edit project config + channel toggle _(deps: #4, #41, #2)_
 - [x] #58 — Profile-generation API: trigger tech-lead session, propose, human-confirm before write _(deps: #23, #2)_
 - [x] #59 — Scaffold orchestrator-ui (React + Vite + TS; eslint/prettier, vitest, tsc) _(deps: #7, #2)_ — `chore`
@@ -239,7 +239,7 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [x] #206 — [A11y] BlockersPage — move focus to resolved section after submit _(a11y)_
 - [x] #207 — BlockersPage — preserve textarea content visually during submission _(ux)_
 - [x] #208 — [A11y] PrsPage — deduplicate GitHub link per PR card _(a11y)_
-- [ ] #209 — UsageGaugesPage — inline error when usage override POST fails _(ux)_
+- [x] #209 — UsageGaugesPage — inline error when usage override POST fails _(ux)_
 - [x] #210 — ProfilePage — remove tautological rawYaml ternary _(chore)_
 - [x] #211 — [A11y] ProfilePage — raise action-error and Reject button red to text-red-700 _(a11y)_
 
