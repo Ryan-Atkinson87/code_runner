@@ -221,7 +221,7 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [x] #63 — Usage-gauges screen: meters, governing highlighted, 80% line, override switch _(deps: #60, #53)_
 - [x] #64 — Blockers screen: live parked-blocker list with inline response _(deps: #60, #54)_
 - [x] #65 — PRs screen: surface hand-off PRs with bodies and checklists _(deps: #60, #55)_
-- [ ] #66 — Efficiency-reports screen: on-demand/per-wave/per-month views _(deps: #60, #56)_
+- [x] #66 — Efficiency-reports screen: on-demand/per-wave/per-month views _(deps: #60, #56)_
 - [x] #67 — Settings screen: config view read/edit + notifications toggle _(deps: #60, #57)_
 - [x] #68 — Profile-generation screen: trigger session, review proposed profile, confirm before write _(deps: #60, #58)_
 - [x] #121 — Enable pyright type-checking on test files _(chore)_
@@ -236,6 +236,12 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [x] #189 — [Responsive] Layout sidebar 375px — hamburger/drawer for mobile _(responsive)_
 - [x] #190 — [Responsive] LoginPage 375px — 16px font prevents iOS auto-zoom _(responsive)_
 - [x] #191 — [Responsive] LoginPage 375px — horizontal margin on mobile _(responsive)_
+- [x] #206 — [A11y] BlockersPage — move focus to resolved section after submit _(a11y)_
+- [x] #207 — BlockersPage — preserve textarea content visually during submission _(ux)_
+- [x] #208 — [A11y] PrsPage — deduplicate GitHub link per PR card _(a11y)_
+- [ ] #209 — UsageGaugesPage — inline error when usage override POST fails _(ux)_
+- [x] #210 — ProfilePage — remove tautological rawYaml ternary _(chore)_
+- [x] #211 — [A11y] ProfilePage — raise action-error and Reject button red to text-red-700 _(a11y)_
 
 **Workable now (Phase-1/2/3/4/5 deps permitting):** #46 first (needs #16, #3). After #46: #47,
 #48 (parallel); then #49 (needs #46, #47) and #50 (needs #48, #47). The API issues unblock as
