@@ -245,6 +245,49 @@ describe("UsageGaugesPage", () => {
     await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2));
   });
 
+  it("shows inline error when override POST fails", async () => {
+    mockGet.mockResolvedValueOnce(SNAPSHOT);
+    mockPost.mockRejectedValueOnce(new Error("network error"));
+    render(<UsageGaugesPage />);
+    await waitFor(() => screen.getByRole("switch"));
+
+    act(() => {
+      fireEvent.click(screen.getByRole("switch", { name: "Usage override" }));
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/Failed to toggle override/)).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Usage override" })).not.toBeDisabled();
+  });
+
+  it("clears override error on next successful toggle", async () => {
+    mockGet.mockResolvedValueOnce(SNAPSHOT);
+    mockPost
+      .mockRejectedValueOnce(new Error("network error"))
+      .mockResolvedValueOnce({ override_active: true });
+    render(<UsageGaugesPage />);
+    await waitFor(() => screen.getByRole("switch"));
+
+    act(() => {
+      fireEvent.click(screen.getByRole("switch", { name: "Usage override" }));
+    });
+    await waitFor(() =>
+      expect(screen.getByText(/Failed to toggle override/)).toBeInTheDocument(),
+    );
+
+    act(() => {
+      fireEvent.click(screen.getByRole("switch", { name: "Usage override" }));
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("switch", { name: "Usage override" }),
+      ).toHaveAttribute("aria-checked", "true"),
+    );
+    expect(screen.queryByText(/Failed to toggle override/)).not.toBeInTheDocument();
+  });
+
   it("shows retry button on error that refetches on click", async () => {
     mockGet
       .mockRejectedValueOnce(new Error("timeout"))
