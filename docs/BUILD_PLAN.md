@@ -222,7 +222,7 @@ phase-3/4/5 capstones (#29, #33, #36, #44) the screens ultimately surface; the f
 - [x] #64 — Blockers screen: live parked-blocker list with inline response _(deps: #60, #54)_
 - [x] #65 — PRs screen: surface hand-off PRs with bodies and checklists _(deps: #60, #55)_
 - [ ] #66 — Efficiency-reports screen: on-demand/per-wave/per-month views _(deps: #60, #56)_
-- [ ] #67 — Settings screen: config view read/edit + notifications toggle _(deps: #60, #57)_
+- [x] #67 — Settings screen: config view read/edit + notifications toggle _(deps: #60, #57)_
 - [ ] #68 — Profile-generation screen: trigger session, review proposed profile, confirm before write _(deps: #60, #58)_
 - [x] #121 — Enable pyright type-checking on test files _(chore)_
 - [x] #123 — Replace lstrip with removeprefix in is_merged _(chore)_

@@ -7,6 +7,7 @@ import { PrsPage } from "./prs/PrsPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LiveProgressPage } from "./progress/LiveProgressPage";
 import { RunControlPage } from "./runs/RunControlPage";
+import { SettingsPage } from "./settings/SettingsPage";
 import { UsageGaugesPage } from "./usage/UsageGaugesPage";
 
 export const router = createBrowserRouter([
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
           { path: "usage", element: <UsageGaugesPage /> },
           { path: "blockers", element: <BlockersPage /> },
           { path: "prs", element: <PrsPage /> },
+          { path: "settings", element: <SettingsPage /> },
         ],
       },
     ],
