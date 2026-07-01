@@ -135,8 +135,7 @@ def _serialise(report: EfficiencyReport) -> EfficiencyReportResponse:
             for rf in report.regressions
         ],
         suggestions=[
-            SuggestionResponse(category=s.category, message=s.message)
-            for s in report.suggestions
+            SuggestionResponse(category=s.category, message=s.message) for s in report.suggestions
         ],
     )
 

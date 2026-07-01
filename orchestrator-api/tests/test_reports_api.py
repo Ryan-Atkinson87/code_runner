@@ -108,21 +108,15 @@ def _make_client(
 
 
 class TestAuthGuard:
-    def test_on_demand_rejected_unauthenticated(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_on_demand_rejected_unauthenticated(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch, authed=False)
         assert client.get("/reports").status_code == 401
 
-    def test_wave_rejected_unauthenticated(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_wave_rejected_unauthenticated(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch, authed=False)
         assert client.get("/reports/wave/P6").status_code == 401
 
-    def test_month_rejected_unauthenticated(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_month_rejected_unauthenticated(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch, authed=False)
         assert client.get("/reports/month/2026-06").status_code == 401
 
@@ -154,9 +148,7 @@ class TestOnDemandReport:
 
     def test_token_breakdown_present(self, monkeypatch: pytest.MonkeyPatch) -> None:
         store = RollupStore(_init_conn())
-        store.aggregate_session(
-            _capture(session_id="a", tokens_in=500, tokens_out=200)
-        )
+        store.aggregate_session(_capture(session_id="a", tokens_in=500, tokens_out=200))
         client = _make_client(monkeypatch, store)
         data = client.get("/reports").json()
         tokens = data["tokens"]
@@ -184,9 +176,7 @@ class TestOnDemandReport:
 
     def test_suggestions_in_response(self, monkeypatch: pytest.MonkeyPatch) -> None:
         store = RollupStore(_init_conn())
-        store.aggregate_session(
-            _capture(session_id="a", tokens_in=5000, tokens_out=100)
-        )
+        store.aggregate_session(_capture(session_id="a", tokens_in=5000, tokens_out=100))
         client = _make_client(monkeypatch, store)
         data = client.get("/reports").json()
         assert isinstance(data["suggestions"], list)
@@ -213,9 +203,7 @@ class TestWaveReport:
         data = client.get("/reports/wave/P6").json()
         assert data["total_sessions"] == 1
 
-    def test_unknown_wave_returns_empty_report(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_unknown_wave_returns_empty_report(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
         resp = client.get("/reports/wave/nonexistent")
         assert resp.status_code == 200
@@ -223,9 +211,7 @@ class TestWaveReport:
 
     def test_token_breakdown_for_wave(self, monkeypatch: pytest.MonkeyPatch) -> None:
         store = RollupStore(_init_conn())
-        store.aggregate_session(
-            _capture(session_id="a", wave="P6", tokens_in=800, tokens_out=300)
-        )
+        store.aggregate_session(_capture(session_id="a", wave="P6", tokens_in=800, tokens_out=300))
         store.aggregate_session(
             _capture(session_id="b", wave="P7", tokens_in=9999, tokens_out=9999)
         )
@@ -253,9 +239,7 @@ class TestErrorPath:
         assert resp.status_code == 500
         assert "failed" in resp.json()["detail"].lower()
 
-    def test_wave_returns_500_on_generation_failure(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_wave_returns_500_on_generation_failure(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.routers.reports as reports_mod
 
         store = RollupStore(_init_conn())
@@ -269,9 +253,7 @@ class TestErrorPath:
         resp = client.get("/reports/wave/P6")
         assert resp.status_code == 500
 
-    def test_month_returns_500_on_generation_failure(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_month_returns_500_on_generation_failure(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.routers.reports as reports_mod
 
         store = RollupStore(_init_conn())
@@ -289,28 +271,20 @@ class TestErrorPath:
 class TestMonthReport:
     def test_scope_is_month_prefixed(self, monkeypatch: pytest.MonkeyPatch) -> None:
         store = RollupStore(_init_conn())
-        store.aggregate_session(
-            _capture(session_id="a", month_dt=datetime(2026, 6, 1, tzinfo=UTC))
-        )
+        store.aggregate_session(_capture(session_id="a", month_dt=datetime(2026, 6, 1, tzinfo=UTC)))
         client = _make_client(monkeypatch, store)
         data = client.get("/reports/month/2026-06").json()
         assert data["scope"] == "month:2026-06"
 
     def test_filters_to_requested_month(self, monkeypatch: pytest.MonkeyPatch) -> None:
         store = RollupStore(_init_conn())
-        store.aggregate_session(
-            _capture(session_id="a", month_dt=datetime(2026, 6, 1, tzinfo=UTC))
-        )
-        store.aggregate_session(
-            _capture(session_id="b", month_dt=datetime(2026, 7, 1, tzinfo=UTC))
-        )
+        store.aggregate_session(_capture(session_id="a", month_dt=datetime(2026, 6, 1, tzinfo=UTC)))
+        store.aggregate_session(_capture(session_id="b", month_dt=datetime(2026, 7, 1, tzinfo=UTC)))
         client = _make_client(monkeypatch, store)
         data = client.get("/reports/month/2026-06").json()
         assert data["total_sessions"] == 1
 
-    def test_unknown_month_returns_empty_report(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_unknown_month_returns_empty_report(self, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_client(monkeypatch)
         resp = client.get("/reports/month/2099-01")
         assert resp.status_code == 200

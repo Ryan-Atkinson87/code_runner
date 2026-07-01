@@ -360,6 +360,16 @@ Read the current project configuration. Secrets are shown by reference (env-var 
 
 **Response 401:** missing or invalid session cookie
 
+### `GET /config/providers`
+Return the list of available provider slugs. The settings screen uses this to populate the Default Provider selector without a hardcoded constant.
+
+**Response 200:**
+```json
+{ "providers": ["claude", "codex", "gemini"] }
+```
+
+**Response 401:** missing or invalid session cookie
+
 ### `PUT /config/provider`
 Update the provider/model mapping. All fields are optional — omit to leave unchanged.
 
