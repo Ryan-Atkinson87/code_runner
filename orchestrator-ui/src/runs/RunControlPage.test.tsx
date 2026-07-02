@@ -139,6 +139,32 @@ describe("RunControlPage", () => {
     expect(select).toHaveTextContent("gpt4");
   });
 
+  it("pre-selects the first API-returned provider, not hardcoded claude", async () => {
+    mockGet
+      .mockResolvedValueOnce({ waves: OPEN_WAVES })
+      .mockResolvedValueOnce(NO_RUN)
+      .mockResolvedValueOnce({ providers: ["codex", "gemini"] });
+    render(<RunControlPage />);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Provider")).toBeInTheDocument(),
+    );
+    expect(screen.getByLabelText<HTMLSelectElement>("Provider").value).toBe("codex");
+  });
+
+  it("shows empty-providers message when provider list is empty", async () => {
+    mockGet
+      .mockResolvedValueOnce({ waves: OPEN_WAVES })
+      .mockResolvedValueOnce(NO_RUN)
+      .mockResolvedValueOnce({ providers: [] });
+    render(<RunControlPage />);
+    await waitFor(() =>
+      expect(
+        screen.getByText(/No providers available/),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.queryByLabelText("Provider")).not.toBeInTheDocument();
+  });
+
   it("calls POST /runs/start with selected wave and provider", async () => {
     mockGet
       .mockResolvedValueOnce({ waves: OPEN_WAVES })
