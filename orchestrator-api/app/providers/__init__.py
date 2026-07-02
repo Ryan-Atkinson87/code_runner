@@ -24,4 +24,20 @@ __all__ = [
     "SessionResult",
     "SessionRole",
     "UsageReport",
+    "get_adapter",
 ]
+
+
+def get_adapter(provider: ProviderName) -> ProviderAdapter:
+    """Return a fresh adapter instance for the given provider (Spec §3.3).
+
+    Claude adapter reads ANTHROPIC_API_KEY from the environment via the
+    Anthropic SDK default; Codex and Gemini are pure CLI wrappers.
+    """
+    if provider == "codex":
+        return CodexAdapter()
+    if provider == "gemini":
+        return GeminiAdapter()
+    import anthropic  # noqa: PLC0415
+
+    return ClaudeAdapter(anthropic.AsyncAnthropic())

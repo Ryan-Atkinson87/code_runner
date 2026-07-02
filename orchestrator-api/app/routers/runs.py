@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Literal
+import asyncio
+from collections.abc import Callable, Coroutine
+from typing import TYPE_CHECKING, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -8,14 +10,29 @@ from pydantic import BaseModel, Field
 from app.auth.dependencies import require_auth
 from app.engine.run_manager import RunControlError, RunController, RunNotFoundError, RunStatus
 
+if TYPE_CHECKING:
+    from app.config.schema import ProjectConfig
+    from app.usage.monitor import UsageMonitor
+
 router = APIRouter(prefix="/runs", tags=["runs"], dependencies=[Depends(require_auth)])
 
 _controller: RunController | None = None
+_monitor: UsageMonitor | None = None
+_project_config: ProjectConfig | None = None
+_wave_run_fn: Callable[[int, str, str], Coroutine[Any, Any, None]] | None = None
 
 
-def init_run_controller(controller: RunController) -> None:
-    global _controller
+def init_run_controller(
+    controller: RunController,
+    monitor: UsageMonitor | None = None,
+    project_config: ProjectConfig | None = None,
+    wave_run_fn: Callable[[int, str, str], Coroutine[Any, Any, None]] | None = None,
+) -> None:
+    global _controller, _monitor, _project_config, _wave_run_fn
     _controller = controller
+    _monitor = monitor
+    _project_config = project_config
+    _wave_run_fn = wave_run_fn
 
 
 def _get_controller() -> RunController:
@@ -93,6 +110,18 @@ async def start_run(body: StartRunRequest) -> RunResponse:
         )
     except RunControlError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+    if _monitor is not None:
+        plan = _project_config.provider.plan if _project_config is not None else ""
+        _monitor.switch_reader(_monitor.reader, body.provider, plan)
+
+    if _wave_run_fn is not None:
+        task = asyncio.create_task(
+            _wave_run_fn(state.run_id, body.wave, body.provider),
+            name=f"wave-{state.run_id}",
+        )
+        controller.set_active_task(task)
+
     return RunResponse(
         run_id=state.run_id,
         project=state.project,

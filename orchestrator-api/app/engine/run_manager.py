@@ -186,6 +186,10 @@ class RunController:
     def set_active_task(self, task: asyncio.Task[None]) -> None:
         self._active_task = task
 
+    @property
+    def active_task(self) -> asyncio.Task[None] | None:
+        return self._active_task
+
     def list_waves(self) -> list[dict[str, Any]]:
         if self._github_client is None or not self._repo_name:
             return []

@@ -112,6 +112,10 @@ class UsageMonitor:
         logger.info("Monitor switched to %s/%s", provider, plan)
 
     @property
+    def reader(self) -> UsageReader:
+        return self._reader
+
+    @property
     def state(self) -> MonitorState | None:
         return self._last_state
 

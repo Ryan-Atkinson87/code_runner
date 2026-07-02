@@ -5,7 +5,10 @@ from pathlib import Path
 import pytest
 
 from app.providers import (
+    ClaudeAdapter,
+    CodexAdapter,
     EventKind,
+    GeminiAdapter,
     NormalisedEvent,
     ProviderAdapter,
     SessionOutcome,
@@ -197,3 +200,38 @@ class TestNoProviderSdkImports:
         source = Path(mod.__file__).read_text()  # type: ignore[arg-type]
         for pattern in self.FORBIDDEN_IMPORTS:
             assert pattern not in source, f"Found '{pattern}' in adapter.py"
+
+
+class TestGetAdapter:
+    def test_claude_returns_claude_adapter(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from unittest.mock import MagicMock
+
+        import anthropic
+
+        from app.providers import get_adapter
+
+        monkeypatch.setattr(anthropic, "AsyncAnthropic", MagicMock())
+        assert isinstance(get_adapter("claude"), ClaudeAdapter)
+
+    def test_codex_returns_codex_adapter(self) -> None:
+        from app.providers import get_adapter
+
+        assert isinstance(get_adapter("codex"), CodexAdapter)
+
+    def test_gemini_returns_gemini_adapter(self) -> None:
+        from app.providers import get_adapter
+
+        assert isinstance(get_adapter("gemini"), GeminiAdapter)
+
+    def test_returns_fresh_instance_each_call(self) -> None:
+        from app.providers import get_adapter
+
+        a = get_adapter("codex")
+        b = get_adapter("codex")
+        assert a is not b
+
+    def test_codex_and_gemini_return_provider_adapter_subclass(self) -> None:
+        from app.providers import get_adapter
+
+        for provider in ("codex", "gemini"):
+            assert isinstance(get_adapter(provider), ProviderAdapter)  # type: ignore[arg-type]

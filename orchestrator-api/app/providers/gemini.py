@@ -44,11 +44,11 @@ _REQUIRED_LOCKDOWN_FLAGS: tuple[str, ...] = ("--sandbox",)
 
 # Patterns matched against raw tool_call input JSON. Any hit → BLOCKED (Spec §7.5).
 _PROHIBITED_CALL_PATTERNS: tuple[re.Pattern[str], ...] = (
-    re.compile(r"\bgit\s+push\b.+--force"),              # force-push long form
-    re.compile(r"\bgit\s+push\b.+-f\b"),                 # force-push short form
+    re.compile(r"\bgit\s+push\b.+--force"),  # force-push long form
+    re.compile(r"\bgit\s+push\b.+-f\b"),  # force-push short form
     re.compile(r"\bgit\s+push\b.+\borigin\b.+\b(?:main|dev)\b"),  # push to main/dev
-    re.compile(r"\.env(?!\.example)\b"),                  # .env secret files
-    re.compile(r"\.github/workflows"),                    # CI/workflow files
+    re.compile(r"\.env(?!\.example)\b"),  # .env secret files
+    re.compile(r"\.github/workflows"),  # CI/workflow files
 )
 
 
@@ -244,5 +244,3 @@ def _map_status(status: str) -> SessionOutcome:
 def _is_blocked(content: str) -> bool:
     lowered = content.lower()
     return any(phrase in lowered for phrase in _BLOCKED_PHRASES)
-
-

@@ -34,7 +34,8 @@ from app.usage.monitor import UsageMonitor
 from app.usage.policy import UsagePolicy
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable, Callable, Coroutine
+    from typing import Any
 
     from app.blockers.store import BlockerStore
     from app.engine.profile_generation import ProfileGenerationResult
@@ -57,6 +58,7 @@ def create_app(
     profile_output_path: Path | None = None,
     progress_bus: ProgressBus | None = None,
     rollup_store: RollupStore | None = None,
+    wave_run_fn: Callable[[int, str, str], Coroutine[Any, Any, None]] | None = None,
 ) -> FastAPI:
     if settings is None:
         settings = Settings()
@@ -65,7 +67,12 @@ def create_app(
     init_session_store(store)
 
     if run_controller is not None:
-        init_run_controller(run_controller)
+        init_run_controller(
+            run_controller,
+            monitor=usage_monitor,
+            project_config=project_config,
+            wave_run_fn=wave_run_fn,
+        )
 
     if usage_monitor is not None and usage_policy is not None:
         init_usage_deps(usage_monitor, usage_policy)
