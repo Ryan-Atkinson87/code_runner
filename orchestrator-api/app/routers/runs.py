@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Callable, Coroutine
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -9,6 +10,8 @@ from pydantic import BaseModel, Field
 
 from app.auth.dependencies import require_auth
 from app.engine.run_manager import RunControlError, RunController, RunNotFoundError, RunStatus
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from app.config.schema import ProjectConfig
@@ -121,6 +124,12 @@ async def start_run(body: StartRunRequest) -> RunResponse:
             name=f"wave-{state.run_id}",
         )
         controller.set_active_task(task)
+
+        def _log_task_result(t: asyncio.Task[None]) -> None:
+            if not t.cancelled() and (exc := t.exception()):
+                logger.error("Wave task failed: %s", exc, exc_info=exc)
+
+        task.add_done_callback(_log_task_result)
 
     return RunResponse(
         run_id=state.run_id,

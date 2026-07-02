@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import logging
 import sqlite3
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from argon2 import PasswordHasher
 from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
 from app.auth import router as auth_router_mod
 from app.auth.rate_limit import RateLimiter
@@ -462,3 +464,37 @@ class TestWaveDispatch:
         resp = authed_client.post("/runs/start", json={"wave": "test"})
         assert resp.status_code == 201
         assert controller.active_task is None
+
+    @pytest.mark.anyio
+    async def test_done_callback_logs_wave_failure(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        controller: RunController,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        monkeypatch.setenv("AUTH_PASSWORD_HASH", _TEST_HASH)
+        monkeypatch.setattr(auth_router_mod, "_login_limiter", RateLimiter())
+
+        async def failing_fn(run_id: int, wave: str, provider: str) -> None:
+            raise RuntimeError("wave exploded")
+
+        app = create_app(
+            Settings(),
+            session_store=SessionStore(),
+            run_controller=controller,
+            wave_run_fn=failing_fn,
+        )
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="https://testserver"
+        ) as ac:
+            await ac.post("/login", json={"password": _TEST_PASSWORD})
+            with caplog.at_level(logging.ERROR, logger="app.routers.runs"):
+                resp = await ac.post("/runs/start", json={"wave": "test", "provider": "claude"})
+                assert resp.status_code == 201
+
+                task = controller.active_task
+                assert task is not None
+                with pytest.raises(RuntimeError, match="wave exploded"):
+                    await task
+
+        assert "Wave task failed" in caplog.text
