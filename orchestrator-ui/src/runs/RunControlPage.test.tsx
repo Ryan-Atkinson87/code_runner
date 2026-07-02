@@ -163,6 +163,12 @@ describe("RunControlPage", () => {
       ).toBeInTheDocument(),
     );
     expect(screen.queryByLabelText("Provider")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { hidden: true }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/^Provider$/, { selector: "label" }),
+    ).not.toBeInTheDocument();
   });
 
   it("calls POST /runs/start with selected wave and provider", async () => {

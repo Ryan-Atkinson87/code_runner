@@ -405,18 +405,18 @@ export function RunControlPage() {
                 </select>
               </div>
 
-              <div>
-                <label
-                  htmlFor="run-provider"
-                  className="mb-1 block text-sm font-medium text-gray-700"
-                >
-                  Provider
-                </label>
-                {providers.length === 0 ? (
-                  <p className="text-sm text-gray-500">
-                    No providers available — check backend configuration.
-                  </p>
-                ) : (
+              {providers.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  No providers available — check backend configuration.
+                </p>
+              ) : (
+                <div>
+                  <label
+                    htmlFor="run-provider"
+                    className="mb-1 block text-sm font-medium text-gray-700"
+                  >
+                    Provider
+                  </label>
                   <select
                     id="run-provider"
                     name="provider"
@@ -429,8 +429,8 @@ export function RunControlPage() {
                       </option>
                     ))}
                   </select>
-                )}
-              </div>
+                </div>
+              )}
 
               <button
                 type="submit"
