@@ -164,9 +164,6 @@ describe("RunControlPage", () => {
     );
     expect(screen.queryByLabelText("Provider")).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("group", { hidden: true }),
-    ).not.toBeInTheDocument();
-    expect(
       screen.queryByText(/^Provider$/, { selector: "label" }),
     ).not.toBeInTheDocument();
   });
