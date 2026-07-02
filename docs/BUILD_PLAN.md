@@ -287,6 +287,8 @@ provider/plan switching, then proves a full wave end-to-end on a second provider
 - [x] #230 — feat: drive RunControlPage provider list from `GET /config/providers` API _(deps: #205)_
 - [x] #235 — refactor: move LockdownError to providers/utils.py _(chore, cleanup)_
 - [x] #236 — fix: RunControlPage provider select defaultValue should derive from API, not hardcode "claude" _(deps: #230)_
+- [x] #240 — fix: add done-callback to wave background task for exception logging
+- [x] #241 — fix: remove orphaned provider label when providers list is empty
 
 **Workable now (Phase-3 deps permitting):** #69 (needs renderer #22), #70 and #72 (each need
 #16/#9/#4) are the three independent starts. Then #71 (needs #70) and #73 (needs #72). The
