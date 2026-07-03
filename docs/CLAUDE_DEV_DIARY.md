@@ -129,3 +129,27 @@ The engine was fully operational after Phase 5 but invisible — there was no da
 Code Runner now has a complete, authenticated React dashboard backed by a fully-documented REST/SSE API. The test suite grew from 774 to 1034 backend tests and 139 frontend tests, all passing with clean lint and type checks on both sides. A code-level accessibility audit surfaced three follow-up findings (#219, #220, #222) and one responsiveness pattern (#223) filed to Phase 7 — none were blocking.
 
 Phase 7 (Multi-provider) is the last infrastructure milestone before the first real run. All of Phase 7's architectural dependencies are satisfied: the ProviderAdapter interface exists, the wave-loop driver is in place, the usage monitor can reload meters on provider switch, and the run-control screen already exposes provider selection. Adding Codex and Gemini is now a clean additive change behind the existing interface.
+
+---
+
+## Milestone 7: Multi-provider — 2026-07-03
+
+### What was done
+
+Phase 7 delivered Codex and Gemini provider adapters behind the existing `ProviderAdapter` interface, completing the multi-provider architecture sketched in the Specification and deferred until a second provider was actually needed. The workstream had three parts.
+
+First, the instruction-file renderer. The system previously rendered provider instructions as `CLAUDE.md` plus skill files — a Claude-specific format. A new AGENTS.md renderer generates a single flat instruction file from the same canonical persona definitions and skill set, with provider-specific emit rules so Codex and Gemini receive their expected input format. One canonical rule set now renders correctly for all three providers; instruction drift across providers is structurally impossible.
+
+Second, the two adapter pairs. The Codex adapter handles subprocess invocation, event-stream parsing, usage extraction, and blocker detection from Codex CLI output. The Gemini adapter does the same for Gemini CLI output. Each adapter also has a dedicated permission and sandbox lockdown layer that enforces file-access constraints before process launch. A subsequent refactor extracted shared `_build_prompt` and `_derive_artifacts` helpers out of the three adapters and moved `LockdownError` to a shared utilities module, eliminating the duplication that had crept in during parallel development.
+
+Third, the integration and UI fixes. The capstone wired provider selection into the wave loop (non-Claude usage metering, mid-wave provider/plan switching) and into the run-control API and UI. The provider dropdown is now driven live from `GET /config/providers` rather than a hardcoded list, and the default value derives from the API rather than the string `"claude"`. An empty-providers edge case was caught and fixed: when the API returns no providers, the select and its label are both hidden cleanly. Several test and chore issues closed out the milestone: a done-callback added to the wave background task for exception logging, and a vacuous `queryByRole("group")` assertion removed from the empty-providers test.
+
+### Why it was done
+
+The Specification deferred multi-provider support to "when a second provider is actually wanted" — the adapter interface was designed for it from Phase 3, but only the Claude adapter was built for the MVP. Phase 7 resolves the Spec §15 open item explicitly: per-provider event mapping, usage extraction, and blocker detection now live in each adapter rather than being Claude-specific assumptions scattered through the engine. Practically, adding a second provider proves that the ProviderAdapter seam actually works as a boundary — that orchestration code is genuinely provider-neutral.
+
+### Effect on the project
+
+All seven planned infrastructure phases are now complete. The system can orchestrate a project milestone using Claude, Codex, or Gemini as the implementing provider, switching mid-wave if needed, with provider-correct instruction rendering, usage monitoring, and sandbox enforcement in each case. The test suite stands at 1169 backend tests and 143 frontend tests, all passing with zero lint warnings and zero type errors on both sides.
+
+The next step is the first real autonomous run: pointing the tool at a live GitHub repository, defining a wave of issues, and observing the engine plan, implement, and hand off PRs without human intervention. Every infrastructure component needed for that run is in place.

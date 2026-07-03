@@ -35,7 +35,7 @@ progress and has two parts:
 | 4 | Usage monitor | ✅ | 3 |
 | 5 | Trackers + notifications | ✅ | 3 |
 | 6 | Observability + UI | ✅ | 3, 4, 5 |
-| 7 | Multi-provider | 🔄 | 3 |
+| 7 | Multi-provider | ✅ | 3 |
 
 ---
 
@@ -268,7 +268,7 @@ resolves the Spec §15 open item deferred "until a second provider is actually w
 per-provider event mapping, usage extraction, and blocker detection now live in each adapter
 issue.
 
-**Status:** 🔄 (planned — issues created)
+**Status:** ✅ (complete — milestone closed 2026-07-03)
 
 ### Issues
 
