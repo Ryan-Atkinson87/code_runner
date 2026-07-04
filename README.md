@@ -38,11 +38,8 @@ docker compose up -d --build
 # Check all services are running
 docker compose ps
 
-# Health check (via Traefik)
+# Health check (via Traefik — the only published route to orchestrator-api)
 curl -k https://localhost/api/health
-
-# Health check (direct)
-curl http://localhost:8000/health
 ```
 
 ### Agent-runner network lockdown

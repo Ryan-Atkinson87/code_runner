@@ -96,12 +96,14 @@ needed.
 curl -k https://localhost/api/health
 ```
 
-### 5b. Health check "direct" — ⚠️ blocked by [#249](https://github.com/Ryan-Atkinson87/code_runner/issues/249)
+### 5b. Health check "direct" — resolved by [#249](https://github.com/Ryan-Atkinson87/code_runner/issues/249)
 
-README.md documents `curl http://localhost:8000/health` as a "direct" alternative. This cannot
-work: `orchestrator-api` has no `ports:` mapping in `docker-compose.yml`, so port 8000 isn't
-reachable from the host at all. Skip this check until #249 closes (either the doc line is
-removed or the port gets published).
+README.md previously documented `curl http://localhost:8000/health` as a "direct" alternative.
+This never worked: `orchestrator-api` has no `ports:` mapping in `docker-compose.yml`, so port
+8000 isn't reachable from the host at all. Fixed by removing the direct-check line rather than
+publishing the port — `traefik` is the only service with host port mappings in this stack by
+design (Spec §2), and opening a second, TLS-less ingress path for local-dev convenience would be
+a step away from that, not just a doc fix. Traefik (step 5a) is the one supported health check.
 
 ## 6. Prepare `project.yaml` for your target project — ⚠️ blocked by [#246](https://github.com/Ryan-Atkinson87/code_runner/issues/246)
 
