@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from app.auth.dependencies import init_session_store
 from app.auth.router import router as auth_router
 from app.auth.sessions import SessionStore
+from app.bootstrap import build_dependencies, should_bootstrap
 from app.config.schema import ProjectConfig
 from app.engine.run_manager import RunController
 from app.github.client import GitHubClient
@@ -42,6 +43,14 @@ if TYPE_CHECKING:
     from app.observability.rollup import RollupStore
 
 
+def _active_run_id_fn(controller: RunController) -> Callable[[], int | None]:
+    def _get() -> int | None:
+        active = controller.get_active_run()
+        return active.run_id if active is not None else None
+
+    return _get
+
+
 def create_app(
     settings: Settings | None = None,
     session_store: SessionStore | None = None,
@@ -62,6 +71,24 @@ def create_app(
 ) -> FastAPI:
     if settings is None:
         settings = Settings()
+
+    if should_bootstrap(settings):
+        built = build_dependencies(settings)
+        run_controller = run_controller or built.run_controller
+        usage_monitor = usage_monitor or built.usage_monitor
+        usage_policy = usage_policy or built.usage_policy
+        blocker_store = blocker_store or built.blocker_store
+        active_run_id_fn = active_run_id_fn or _active_run_id_fn(built.run_controller)
+        github_client = github_client or built.github_client
+        repo_name = repo_name or (
+            built.project_config.repos[0].name if built.project_config.repos else ""
+        )
+        project_config = project_config or built.project_config
+        config_path = config_path or settings.project_config_path
+        profile_generate_fn = profile_generate_fn or built.profile_generate_fn
+        profile_output_path = profile_output_path or Path(settings.execution_profile_path)
+        rollup_store = rollup_store or built.rollup_store
+        wave_run_fn = wave_run_fn or built.wave_run_fn
 
     store = session_store or SessionStore()
     init_session_store(store)

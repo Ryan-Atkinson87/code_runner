@@ -19,6 +19,7 @@ All filed under milestone [**Deployment bootstrap** (#8)](https://github.com/Rya
 | [#247](https://github.com/Ryan-Atkinson87/code_runner/issues/247) | Add docker-compose volume mounts: `orchestrator-api` needs project-repo access + SQLite persistence | 9 |
 | [#248](https://github.com/Ryan-Atkinson87/code_runner/issues/248) | Claude adapter executes tool calls in-process, bypassing the `agent-runner` sandbox decided in the Spec | 9 (security posture, not a hard blocker to boot) |
 | [#249](https://github.com/Ryan-Atkinson87/code_runner/issues/249) | README's documented direct health check cannot work — port 8000 not published | 5b |
+| [#250](https://github.com/Ryan-Atkinson87/code_runner/issues/250) | No canonical base-skill/persona-prompt/overlay content exists — `compose_and_render` has nothing to load in production | 9 (discovered while implementing #246) |
 
 Re-run through this file once those issues close to confirm readiness — that's its purpose.
 
@@ -148,6 +149,11 @@ calls and tool execution happen from the network-locked `agent-runner` container
 adapter runs them unsandboxed from `orchestrator-api` instead. The egress allowlist and
 filesystem lockdown currently protect a container that never executes agent-authored code.
 
+Even once #246 and #247 close, a real wave will fail immediately inside `compose_and_render` —
+see [#250](https://github.com/Ryan-Atkinson87/code_runner/issues/250): no tool-level canonical
+skill set, persona base-prompt, or overlay content has ever been authored, so there is nothing
+for the composition root to load.
+
 ## 10. Observability (Langfuse) — ✅, independent of the above
 
 `app/observability/langfuse_emitter.py` reads `LANGFUSE_PUBLIC_KEY`/`SECRET_KEY`/`HOST` directly
@@ -181,4 +187,5 @@ docker compose down -v    # also remove volumes
 - [ ] #247 closed — `orchestrator-api` can reach a project repo and persists its DB
 - [ ] #248 resolved (design decision made, spec and implementation consistent again)
 - [ ] #249 closed — README matches the actual reachable endpoints
+- [ ] #250 closed — canonical skill/prompt/overlay content exists for `compose_and_render` to load
 - [ ] Steps 6, 7, 9 re-verified end-to-end with a real `project.yaml` and a trivial milestone

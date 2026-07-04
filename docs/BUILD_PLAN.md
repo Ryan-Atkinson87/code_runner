@@ -36,6 +36,7 @@ progress and has two parts:
 | 5 | Trackers + notifications | ✅ | 3 |
 | 6 | Observability + UI | ✅ | 3, 4, 5 |
 | 7 | Multi-provider | ✅ | 3 |
+| 8 | Deployment bootstrap | 🔄 | 1, 2, 3, 4, 5, 6, 7 |
 
 ---
 
@@ -299,3 +300,29 @@ note:** #74 depends on Phase-4 #37 (meter reload on switch) and surfaces the pro
 that Phase-6 run-control (#51) exposes in the UI — so although the phase is gated only on Phase 3
 architecturally, the capstone cannot fully land until Phase 4 (#37) and the wave-loop driver (#29)
 do. All of Phase 7 is gated on Phase 3 merging first.
+
+---
+
+## 8. Deployment bootstrap
+
+Not one of the original Spec §14 phases — a gap discovered while drafting
+`docs/DEPLOYMENT_PLAN.md` for a first real end-to-end run. Every subsystem from Phases 1-7 is
+built and unit-tested in isolation, but nothing ever wired them together at process start
+(`create_app()`), gave `orchestrator-api` filesystem access to a target project, or authored the
+tool-level canonical persona/skill content the wave loop composes at render time. See
+`docs/DEPLOYMENT_PLAN.md`'s blocking-issue table for how these map onto its step-by-step plan.
+
+**Status:** 🔄 (in progress — opened 2026-07-04)
+
+### Issues
+
+- [ ] #246 — Wire real dependencies into `create_app()` so the API boots functional, not stubbed
+- [ ] #247 — Add docker-compose volume mounts: `orchestrator-api` needs project-repo access + SQLite persistence _(deps: #246)_
+- [ ] #248 — Claude adapter executes tool calls in-process, bypassing the `agent-runner` sandbox decided in the Spec
+- [ ] #249 — README's documented direct health check cannot work — port 8000 not published
+- [ ] #250 — No canonical base-skill/persona-prompt/overlay content exists — `compose_and_render` has nothing to load in production _(discovered while implementing #246)_
+
+**Workable now:** #246, #248, #249 have no in-milestone dependencies and can proceed in any
+order; #247 needs #246 (path/env-var naming agreed together). #250 is functionally independent
+of the others but, like #247, is required before `docs/DEPLOYMENT_PLAN.md` step 9 (a real wave
+run) can fully succeed rather than fail immediately.
