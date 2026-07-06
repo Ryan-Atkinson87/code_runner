@@ -2,18 +2,23 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
+from typing import Any
+from unittest.mock import AsyncMock
 
 import pytest
 from argon2 import PasswordHasher
 from fastapi.testclient import TestClient
 
+import app.bootstrap as bootstrap
 from app.bootstrap import build_dependencies, should_bootstrap
 from app.config.schema import ProjectConfig
 from app.engine.run_manager import RunController
 from app.github.client import GitHubClient
 from app.main import create_app
+from app.personas.loader import load_base_prompts, load_overlays
 from app.secrets.resolver import SecretResolutionError
 from app.settings import Settings
+from app.skills.loader import load_skills_from_directory
 
 _FIXTURE = Path(__file__).parent / "fixtures" / "minimal_project.yaml"
 _ph = PasswordHasher()
@@ -120,3 +125,36 @@ class TestCreateAppBootstrapWiring:
         body = response.json()
         assert body["project"] == "My Tool"
         assert body["status"] == "running"
+
+
+@pytest.mark.usefixtures("secrets_env")
+class TestWaveRunFnLoadsCanonicalContent:
+    """Guards against #250's regression: run_wave must receive the real
+    canonical skills/base_prompts/overlays, not the empty placeholders
+    build_dependencies shipped with before the canonical set existed.
+    """
+
+    @pytest.mark.anyio
+    async def test_wave_run_fn_passes_real_canonical_content_to_run_wave(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        captured: dict[str, Any] = {}
+
+        async def _fake_run_wave(**kwargs: Any) -> None:
+            captured.update(kwargs)
+
+        monkeypatch.setattr(bootstrap, "read_wave", lambda *a, **kw: object())
+        monkeypatch.setattr(bootstrap, "load_execution_profile", lambda *a, **kw: object())
+        monkeypatch.setattr(bootstrap, "get_adapter", lambda *a, **kw: object())
+        monkeypatch.setattr(bootstrap, "run_wave", AsyncMock(side_effect=_fake_run_wave))
+
+        built = build_dependencies(_settings(tmp_path))
+        await built.wave_run_fn(1, "Trivial milestone", "claude")
+
+        canonical = bootstrap._CANONICAL_DIR
+        assert captured["skills"] == load_skills_from_directory(canonical / "skills")
+        assert captured["base_prompts"] == load_base_prompts(canonical / "prompts")
+        assert captured["overlays"] == load_overlays(canonical / "overlays")
+        assert captured["skills"], "canonical skills must not be empty"
+        assert captured["base_prompts"], "canonical base prompts must not be empty"
+        assert captured["overlays"], "canonical overlays must not be empty"
