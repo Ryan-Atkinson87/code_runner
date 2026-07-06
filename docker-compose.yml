@@ -39,7 +39,12 @@ services:
       retries: 3
       start_period: 10s
     networks:
+      # agent_net: private link to call the agent-runner executor (#256) over its
+      # internal RPC surface (#258). This does not give agent-runner any new
+      # outbound route — agent_net stays `internal: true`, so agent-runner's only
+      # path out remains through egress-proxy.
       - code_runner
+      - agent_net
 
   orchestrator-ui:
     build:
