@@ -317,12 +317,10 @@ tool-level canonical persona/skill content the wave loop composes at render time
 ### Issues
 
 - [x] #246 — Wire real dependencies into `create_app()` so the API boots functional, not stubbed
-- [ ] #247 — Add docker-compose volume mounts: `orchestrator-api` needs project-repo access + SQLite persistence _(deps: #246)_
+- [x] #247 — Add docker-compose volume mounts: `orchestrator-api` needs project-repo access + SQLite persistence _(deps: #246)_
 - [ ] #248 — Claude adapter executes tool calls in-process, bypassing the `agent-runner` sandbox decided in the Spec
 - [x] #249 — README's documented direct health check cannot work — port 8000 not published
-- [ ] #250 — No canonical base-skill/persona-prompt/overlay content exists — `compose_and_render` has nothing to load in production _(discovered while implementing #246; PR #253 seeded the canonical content and loaders, but the final AC — wiring `app/bootstrap.py` to use it — remains open as a follow-up)_
+- [x] #250 — No canonical base-skill/persona-prompt/overlay content exists — `compose_and_render` has nothing to load in production _(discovered while implementing #246; PR #253 seeded the canonical content and loaders; PR #255 wired `app/bootstrap.py` to use it)_
 
-**Workable now:** #246, #248, #249 have no in-milestone dependencies and can proceed in any
-order; #247 needs #246 (path/env-var naming agreed together). #250 is functionally independent
-of the others but, like #247, is required before `docs/DEPLOYMENT_PLAN.md` step 9 (a real wave
-run) can fully succeed rather than fail immediately.
+**Workable now:** #248 is the only remaining issue in this milestone and has no in-milestone
+dependencies.
