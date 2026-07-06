@@ -326,6 +326,8 @@ tool-level canonical persona/skill content the wave loop composes at render time
 - [ ] #258 — Swap ClaudeAdapter's tool execution from local subprocess to the agent-runner executor RPC _(deps: #256, #257)_
 - [ ] #259 — Concurrency and failure-mode parity for the executor under the wave-loop's parallel scheduler _(deps: #258)_
 - [ ] #260 — Add architectural test locking in the sandboxed execution boundary; sync spec/deployment docs _(deps: #258, #259; closes #248 on merge)_
+- [ ] #262 — agent-runner: use constant-time comparison for bearer token auth _(non-blocking finding from #261 review)_
 
 **Workable now:** #256 is the only remaining issue in this milestone with no in-milestone
-dependencies. #257-#260 unlock in sequence as each preceding issue merges.
+dependencies. #257-#260 unlock in sequence as each preceding issue merges. #262 is a
+low-priority hardening item and can be picked up any time.
