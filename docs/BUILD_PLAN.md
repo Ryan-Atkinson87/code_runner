@@ -318,9 +318,14 @@ tool-level canonical persona/skill content the wave loop composes at render time
 
 - [x] #246 — Wire real dependencies into `create_app()` so the API boots functional, not stubbed
 - [x] #247 — Add docker-compose volume mounts: `orchestrator-api` needs project-repo access + SQLite persistence _(deps: #246)_
-- [ ] #248 — Claude adapter executes tool calls in-process, bypassing the `agent-runner` sandbox decided in the Spec
+- [ ] #248 — Claude adapter executes tool calls in-process, bypassing the `agent-runner` sandbox decided in the Spec _(tracking issue; decision recorded 2026-07-06 — option (a), scoped into #256-#260 below)_
 - [x] #249 — README's documented direct health check cannot work — port 8000 not published
 - [x] #250 — No canonical base-skill/persona-prompt/overlay content exists — `compose_and_render` has nothing to load in production _(discovered while implementing #246; PR #253 seeded the canonical content and loaders; PR #255 wired `app/bootstrap.py` to use it)_
+- [ ] #256 — Build an agent-runner executor service for bash + text-editor tool execution
+- [ ] #257 — Give orchestrator-api an internal-only network path to the agent-runner executor _(deps: #256)_
+- [ ] #258 — Swap ClaudeAdapter's tool execution from local subprocess to the agent-runner executor RPC _(deps: #256, #257)_
+- [ ] #259 — Concurrency and failure-mode parity for the executor under the wave-loop's parallel scheduler _(deps: #258)_
+- [ ] #260 — Add architectural test locking in the sandboxed execution boundary; sync spec/deployment docs _(deps: #258, #259; closes #248 on merge)_
 
-**Workable now:** #248 is the only remaining issue in this milestone and has no in-milestone
-dependencies.
+**Workable now:** #256 is the only remaining issue in this milestone with no in-milestone
+dependencies. #257-#260 unlock in sequence as each preceding issue merges.
