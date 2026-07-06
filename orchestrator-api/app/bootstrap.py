@@ -15,9 +15,11 @@ from app.engine.wave_driver import run_wave
 from app.github.client import GitHubClient
 from app.handoff.engine import HandoffEngine
 from app.observability.rollup import RollupStore
+from app.personas.loader import load_base_prompts, load_overlays
 from app.profile.loader import load_execution_profile
 from app.providers import get_adapter
 from app.secrets.resolver import resolve_secrets
+from app.skills.loader import load_skills_from_directory
 from app.usage.api_reader import ApiUsageReader
 from app.usage.monitor import UsageMonitor
 from app.usage.policy import UsagePolicy
@@ -36,6 +38,7 @@ if TYPE_CHECKING:
 
 _DEFAULT_MODEL = "claude-sonnet-4-6"
 _CLAUDE_CREDENTIALS_PATH = Path.home() / ".claude" / ".credentials.json"
+_CANONICAL_DIR = Path(__file__).parent.parent / "canonical"
 
 
 @dataclass
@@ -151,6 +154,10 @@ def _build_wave_run_fn(
     store: StateStore,
     blocker_store: BlockerStore,
 ) -> Callable[[int, str, str], Coroutine[Any, Any, None]]:
+    skills = load_skills_from_directory(_CANONICAL_DIR / "skills")
+    base_prompts = load_base_prompts(_CANONICAL_DIR / "prompts")
+    overlays = load_overlays(_CANONICAL_DIR / "overlays")
+
     async def _wave_run_fn(run_id: int, wave_name: str, provider: str) -> None:
         provider_name = cast("ProviderName", provider)
         wave = read_wave(github_client, project_config, wave_name)
@@ -159,11 +166,6 @@ def _build_wave_run_fn(
         handoff_engine = HandoffEngine(github_client)
         model = project_config.provider.models.implementing or _DEFAULT_MODEL
 
-        # No canonical base-skill/persona-prompt/overlay content exists yet
-        # (Spec §17.3/§17.4/§17.6 — tool-level content, not this issue's
-        # composition-root wiring). A real run will raise inside
-        # compose_and_render until that content lands; logged by the
-        # wave task's done-callback rather than surfacing here.
         await run_wave(
             wave=wave,
             project_config=project_config,
@@ -172,9 +174,9 @@ def _build_wave_run_fn(
             handoff_engine=handoff_engine,
             db_conn=store.conn,
             repo_paths=_repo_paths(project_config),
-            skills=[],
-            base_prompts={},
-            overlays=[],
+            skills=skills,
+            base_prompts=base_prompts,
+            overlays=overlays,
             model=model,
             wave_name=wave_name,
             run_id=run_id,
