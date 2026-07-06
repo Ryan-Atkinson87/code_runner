@@ -17,6 +17,9 @@ services:
     env_file: .env
     environment:
       - CODE_RUNNER_ROOT_PATH=/api
+    volumes:
+      - ${CODE_RUNNER_PROJECT_DIR:-./agent-workspace}:/workspace:rw
+      - orchestrator-api-data:/data
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
@@ -124,3 +127,4 @@ networks:
 
 volumes:
   langfuse-data:
+  orchestrator-api-data:

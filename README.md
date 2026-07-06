@@ -49,6 +49,10 @@ external route. All outbound traffic goes through the Squid `egress-proxy`, whic
 hostname allowlist (`squid/allowlist.txt`). The root filesystem is read-only and `/workspace` is
 the only writable mount (bound to the target project directory via `CODE_RUNNER_PROJECT_DIR`).
 
+Note: `agent-runner` is not currently invoked by the Claude adapter (see issue #248) — the same
+`CODE_RUNNER_PROJECT_DIR` host path is also mounted read-write into `orchestrator-api` at
+`/workspace`, which is where the adapter's `bash`/text-editor tool calls actually execute today.
+
 Default allowlist: `github.com`, `api.github.com`, `codeload.github.com`,
 `registry.npmjs.org`, `pypi.org`, `files.pythonhosted.org`, `api.anthropic.com`.
 Per-project additions come from `project.yaml` `egress.allow` at runtime.
@@ -57,6 +61,12 @@ Per-project additions come from `project.yaml` `egress.allow` at runtime.
 # Verify the lockdown with the stack running
 bash scripts/verify-egress-lockdown.sh
 ```
+
+### Data persistence
+
+`orchestrator-api`'s SQLite state store lives on the `orchestrator-api-data` named volume,
+mounted at `/data` — it survives `docker compose down` and is only removed with
+`docker compose down -v`, the same convention `langfuse-data` uses.
 
 ### Tear down
 
