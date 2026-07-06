@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hmac
+
 from fastapi import Header, HTTPException
 
 from app.settings import Settings
@@ -17,5 +19,6 @@ async def require_token(authorization: str | None = Header(default=None)) -> Non
     if settings is None or not settings.token:
         raise HTTPException(status_code=503, detail="agent-runner has no auth token configured")
 
-    if authorization != f"Bearer {settings.token}":
+    expected = f"Bearer {settings.token}"
+    if authorization is None or not hmac.compare_digest(authorization, expected):
         raise HTTPException(status_code=401, detail="invalid or missing bearer token")
