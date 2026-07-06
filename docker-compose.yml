@@ -90,8 +90,8 @@ services:
       - code_runner
 
   agent-runner:
-    image: python:3.13-slim
-    command: ["sleep", "infinity"]
+    build:
+      context: ./agent-runner
     env_file: .env
     environment:
       - HTTP_PROXY=http://egress-proxy:3128
@@ -104,6 +104,12 @@ services:
     tmpfs:
       - /tmp:size=512M
       - /root:size=256M
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       - egress-proxy
     networks:

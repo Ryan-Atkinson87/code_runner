@@ -49,9 +49,12 @@ external route. All outbound traffic goes through the Squid `egress-proxy`, whic
 hostname allowlist (`squid/allowlist.txt`). The root filesystem is read-only and `/workspace` is
 the only writable mount (bound to the target project directory via `CODE_RUNNER_PROJECT_DIR`).
 
-Note: `agent-runner` is not currently invoked by the Claude adapter (see issue #248) — the same
+`agent-runner` runs its own internal FastAPI service exposing bash-exec and text-editor RPC
+endpoints (`POST /v1/bash`, `POST /v1/text-editor`), gated by a shared bearer token
+(`AGENT_RUNNER_TOKEN`). It is not yet invoked by the Claude adapter (see issue #248) — the same
 `CODE_RUNNER_PROJECT_DIR` host path is also mounted read-write into `orchestrator-api` at
 `/workspace`, which is where the adapter's `bash`/text-editor tool calls actually execute today.
+Swapping the adapter to call the executor instead is #258.
 
 Default allowlist: `github.com`, `api.github.com`, `codeload.github.com`,
 `registry.npmjs.org`, `pypi.org`, `files.pythonhosted.org`, `api.anthropic.com`.
@@ -80,3 +83,5 @@ docker compose down -v  # also remove volumes
 See [orchestrator-api/README.md](orchestrator-api/README.md) for backend dev commands.
 
 See [orchestrator-ui/README.md](orchestrator-ui/README.md) for frontend dev commands (`npm run dev`, `npm run test`, `npm run lint`, `npm run typecheck`).
+
+See [agent-runner/README.md](agent-runner/README.md) for the sandboxed tool-execution service's dev commands.
