@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from typing import Protocol
 
@@ -62,6 +63,6 @@ class ExecutorClient:
         try:
             response = await self._client.post(path, json=payload)
             response.raise_for_status()
-        except httpx.HTTPError as exc:
+            return str(response.json()["output"])
+        except (httpx.HTTPError, json.JSONDecodeError, KeyError, TypeError) as exc:
             raise ExecutorError(f"agent-runner executor request to {path} failed: {exc}") from exc
-        return str(response.json()["output"])

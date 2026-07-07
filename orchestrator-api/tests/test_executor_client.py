@@ -73,6 +73,33 @@ class TestExecutorClientBash:
         with pytest.raises(ExecutorError):
             await client.bash({"command": "sleep 999"})
 
+    @pytest.mark.asyncio
+    async def test_non_json_200_response_raises_executor_error(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, content=b"not json", headers={"content-type": "text/plain"})
+
+        client = _client_with_transport(httpx.MockTransport(handler))
+        with pytest.raises(ExecutorError):
+            await client.bash({"command": "echo hi"})
+
+    @pytest.mark.asyncio
+    async def test_200_response_missing_output_key_raises_executor_error(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"unexpected": "shape"})
+
+        client = _client_with_transport(httpx.MockTransport(handler))
+        with pytest.raises(ExecutorError):
+            await client.bash({"command": "echo hi"})
+
+    @pytest.mark.asyncio
+    async def test_200_response_non_object_json_raises_executor_error(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json=["not", "a", "dict"])
+
+        client = _client_with_transport(httpx.MockTransport(handler))
+        with pytest.raises(ExecutorError):
+            await client.bash({"command": "echo hi"})
+
 
 class TestExecutorClientTextEditor:
     @pytest.mark.asyncio
