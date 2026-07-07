@@ -51,10 +51,11 @@ the only writable mount (bound to the target project directory via `CODE_RUNNER_
 
 `agent-runner` runs its own internal FastAPI service exposing bash-exec and text-editor RPC
 endpoints (`POST /v1/bash`, `POST /v1/text-editor`), gated by a shared bearer token
-(`AGENT_RUNNER_TOKEN`). It is not yet invoked by the Claude adapter (see issue #248) — the same
-`CODE_RUNNER_PROJECT_DIR` host path is also mounted read-write into `orchestrator-api` at
-`/workspace`, which is where the adapter's `bash`/text-editor tool calls actually execute today.
-Swapping the adapter to call the executor instead is #258.
+(`AGENT_RUNNER_TOKEN`). The Claude adapter calls these over the private `agent_net` link
+(`AGENT_RUNNER_URL`, defaulting to `http://agent-runner:8000`) instead of executing tool calls
+in-process. The same `CODE_RUNNER_PROJECT_DIR` host path is also mounted read-write into
+`orchestrator-api` at `/workspace`, independently of that — the deterministic git/PR engine reads
+and writes the working tree directly, unrelated to agent tool-call execution.
 
 Default allowlist: `github.com`, `api.github.com`, `codeload.github.com`,
 `registry.npmjs.org`, `pypi.org`, `files.pythonhosted.org`, `api.anthropic.com`.

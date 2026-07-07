@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import asyncio
 import json
-import subprocess
 import time
 from pathlib import Path
 
@@ -10,7 +8,8 @@ import anthropic
 
 from app.git.repo import GitRepo
 from app.providers.adapter import ProviderAdapter
-from app.providers.hooks import ToolPermissionError, create_audit_record, pre_tool_use_check
+from app.providers.executor_client import ExecutorClient, ExecutorError, ToolExecutor
+from app.providers.hooks import create_audit_record
 from app.providers.pricing import calculate_cost
 from app.providers.types import (
     AuditRecord,
@@ -32,18 +31,25 @@ _TOOL_DEFS: dict[str, dict[str, str]] = {
 }
 
 _MAX_TOKENS = 64_000
-_BASH_TIMEOUT = 300
+_PERMISSION_DENIED_PREFIX = "Permission denied: "
 
 
 class ClaudeAdapter(ProviderAdapter):
     """Claude provider adapter via the Anthropic Python SDK (Spec §3.1, §3.2).
 
     Each call to ``run_session`` starts a fresh, stateless session (§4.3).
-    Artifacts are derived from git, not from the model's self-report.
+    Artifacts are derived from git, not from the model's self-report. Tool calls run
+    inside the agent-runner executor (Spec §7.1/§7.2), not in this process — see
+    ``ExecutorClient``.
     """
 
-    def __init__(self, client: anthropic.AsyncAnthropic) -> None:
+    def __init__(
+        self,
+        client: anthropic.AsyncAnthropic,
+        executor: ToolExecutor | None = None,
+    ) -> None:
         self._client = client
+        self._executor = executor or ExecutorClient.from_env()
 
     async def run_session(
         self,
@@ -82,12 +88,12 @@ class ClaudeAdapter(ProviderAdapter):
 
                 tool_blocks = [b for b in response.content if b.type == "tool_use"]
                 messages.append({"role": "assistant", "content": response.content})
-                tool_results, new_audit = await _execute_tools(tool_blocks, workdir)
+                tool_results, new_audit = await _execute_tools(tool_blocks, self._executor)
                 events.extend(_tool_result_events(tool_blocks, tool_results))
                 audit_log.extend(new_audit)
                 messages.append({"role": "user", "content": tool_results})
 
-        except (anthropic.APIError, anthropic.APIConnectionError):
+        except (anthropic.APIError, anthropic.APIConnectionError, ExecutorError):
             outcome = SessionOutcome.ERROR
         except TimeoutError:
             outcome = SessionOutcome.ERROR
@@ -187,121 +193,40 @@ def _map_stop_reason(stop_reason: str | None) -> SessionOutcome:
 
 async def _execute_tools(
     tool_blocks: list[anthropic.types.ToolUseBlock],
-    workdir: Path,
+    executor: ToolExecutor,
 ) -> tuple[list[dict[str, object]], list[AuditRecord]]:
+    """Run each tool call through the agent-runner executor RPC.
+
+    The executor enforces ``pre_tool_use_check`` itself and always answers with a
+    normal 200 response (Spec §7.4) — a "Permission denied: ..."/"Error: ..." string is
+    a tool-level outcome, not an RPC failure. ``ExecutorError`` (raised only for an
+    unreachable/timed-out executor) is deliberately left to propagate to ``run_session``,
+    where it maps to ``SessionOutcome.ERROR`` alongside ``anthropic.APIError``.
+    """
     results: list[dict[str, object]] = []
     audit: list[AuditRecord] = []
     for block in tool_blocks:
         tool_input = block.input if isinstance(block.input, dict) else {}
 
-        try:
-            pre_tool_use_check(block.name, tool_input, workdir)
-        except ToolPermissionError as exc:
-            results.append(
-                {
-                    "type": "tool_result",
-                    "tool_use_id": block.id,
-                    "content": f"Permission denied: {exc}",
-                    "is_error": True,
-                }
-            )
-            audit.append(
-                create_audit_record(block.name, tool_input, blocked=True, block_reason=str(exc))
-            )
-            continue
+        if block.name == "bash":
+            output = await executor.bash(tool_input)
+        elif block.name == "str_replace_based_edit_tool":
+            output = await executor.text_editor(tool_input)
+        else:
+            output = f"Unknown tool: {block.name}"
 
-        try:
-            if block.name == "bash":
-                output = await _execute_bash(tool_input, workdir)
-            elif block.name == "str_replace_based_edit_tool":
-                output = _execute_text_editor(tool_input, workdir)
-            else:
-                output = f"Unknown tool: {block.name}"
-        except Exception as exc:
-            results.append(
-                {
-                    "type": "tool_result",
-                    "tool_use_id": block.id,
-                    "content": f"Error: {exc}",
-                    "is_error": True,
-                }
-            )
-            audit.append(create_audit_record(block.name, tool_input))
-            continue
+        blocked = output.startswith(_PERMISSION_DENIED_PREFIX)
+        result: dict[str, object] = {
+            "type": "tool_result",
+            "tool_use_id": block.id,
+            "content": output,
+        }
+        if blocked or output.startswith("Error"):
+            result["is_error"] = True
+        results.append(result)
 
-        results.append(
-            {
-                "type": "tool_result",
-                "tool_use_id": block.id,
-                "content": output,
-            }
+        block_reason = output.removeprefix(_PERMISSION_DENIED_PREFIX) if blocked else ""
+        audit.append(
+            create_audit_record(block.name, tool_input, blocked=blocked, block_reason=block_reason)
         )
-        audit.append(create_audit_record(block.name, tool_input))
     return results, audit
-
-
-async def _execute_bash(tool_input: dict[str, object], workdir: Path) -> str:
-    if tool_input.get("restart"):
-        return "Shell session restarted."
-    command = str(tool_input.get("command", ""))
-    result = await asyncio.to_thread(
-        subprocess.run,
-        ["bash", "-c", command],
-        cwd=workdir,
-        capture_output=True,
-        text=True,
-        timeout=_BASH_TIMEOUT,
-    )
-    output = result.stdout
-    if result.stderr:
-        output = output + result.stderr if output else result.stderr
-    return output or "(no output)"
-
-
-def _execute_text_editor(tool_input: dict[str, object], workdir: Path) -> str:
-    command = str(tool_input.get("command", ""))
-    rel_path = str(tool_input.get("path", ""))
-    target = (workdir / rel_path).resolve()
-    if not target.is_relative_to(workdir.resolve()):
-        return f"Error: path {rel_path} resolves outside working directory"
-
-    if command == "view":
-        view_range = tool_input.get("view_range")
-        if target.is_dir():
-            return "\n".join(str(f.relative_to(workdir)) for f in sorted(target.iterdir()))
-        text = target.read_text(encoding="utf-8")
-        if isinstance(view_range, list) and len(view_range) == 2:
-            lines = text.split("\n")
-            start = int(str(view_range[0])) - 1
-            end = int(str(view_range[1]))
-            return "\n".join(lines[start:end])
-        return text
-
-    if command == "create":
-        file_text = str(tool_input.get("file_text", ""))
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(file_text, encoding="utf-8")
-        return f"Created {rel_path}"
-
-    if command == "str_replace":
-        old_str = str(tool_input.get("old_str", ""))
-        new_str = str(tool_input.get("new_str", ""))
-        content = target.read_text(encoding="utf-8")
-        count = content.count(old_str)
-        if count == 0:
-            return f"Error: old_str not found in {rel_path}"
-        if count > 1:
-            return f"Error: old_str found {count} times in {rel_path}, expected 1"
-        target.write_text(content.replace(old_str, new_str, 1), encoding="utf-8")
-        return f"Replaced in {rel_path}"
-
-    if command == "insert":
-        insert_line = int(str(tool_input.get("insert_line", 0)))
-        insert_text = str(tool_input.get("insert_text", ""))
-        content = target.read_text(encoding="utf-8")
-        lines = content.split("\n")
-        lines.insert(insert_line, insert_text)
-        target.write_text("\n".join(lines), encoding="utf-8")
-        return f"Inserted at line {insert_line} in {rel_path}"
-
-    return f"Unknown command: {command}"

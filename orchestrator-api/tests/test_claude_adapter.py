@@ -12,12 +12,11 @@ import pytest
 from app.providers.claude import (
     ClaudeAdapter,
     _build_tools,
-    _execute_bash,
-    _execute_text_editor,
     _map_stop_reason,
     _normalise_content,
     _tool_result_events,
 )
+from app.providers.executor_client import ExecutorClient, ExecutorError
 from app.providers.types import (
     EventKind,
     NormalisedEvent,
@@ -64,6 +63,29 @@ def _make_message(
         stop_reason=stop_reason,
         usage=usage or _make_usage(),
     )
+
+
+class _FakeExecutor:
+    """Stands in for the RPC client, running bash against workdir like agent-runner would.
+
+    Real permission-check and text-editor behaviour are agent-runner's own responsibility
+    now (Spec §7.4) and are covered there (agent-runner/tests). This fake only needs to
+    reproduce the shared-filesystem effect the real executor has, so adapter-level tests
+    that assert on git-derived artifacts stay meaningful.
+    """
+
+    def __init__(self, workdir: Path) -> None:
+        self._workdir = workdir
+
+    async def bash(self, tool_input: dict[str, Any]) -> str:
+        command = str(tool_input.get("command", ""))
+        result = subprocess.run(
+            ["bash", "-c", command], cwd=self._workdir, capture_output=True, text=True
+        )
+        return result.stdout or "(no output)"
+
+    async def text_editor(self, tool_input: dict[str, Any]) -> str:
+        raise NotImplementedError
 
 
 class TestBuildTools:
@@ -186,101 +208,6 @@ class TestMapStopReason:
 
     def test_unknown(self) -> None:
         assert _map_stop_reason("something_unexpected") == SessionOutcome.ERROR
-
-
-class TestExecuteBash:
-    @pytest.mark.asyncio
-    async def test_simple_command(self, tmp_path: Path) -> None:
-        result = await _execute_bash({"command": "echo hello"}, tmp_path)
-        assert "hello" in result
-
-    @pytest.mark.asyncio
-    async def test_stderr_included(self, tmp_path: Path) -> None:
-        result = await _execute_bash({"command": "echo err >&2"}, tmp_path)
-        assert "err" in result
-
-    @pytest.mark.asyncio
-    async def test_restart(self, tmp_path: Path) -> None:
-        result = await _execute_bash({"restart": True}, tmp_path)
-        assert "restarted" in result.lower()
-
-    @pytest.mark.asyncio
-    async def test_runs_in_workdir(self, tmp_path: Path) -> None:
-        result = await _execute_bash({"command": "pwd"}, tmp_path)
-        assert str(tmp_path) in result
-
-    @pytest.mark.asyncio
-    async def test_no_output(self, tmp_path: Path) -> None:
-        result = await _execute_bash({"command": "true"}, tmp_path)
-        assert result == "(no output)"
-
-
-class TestExecuteTextEditor:
-    def test_view_file(self, tmp_path: Path) -> None:
-        (tmp_path / "hello.py").write_text("print('hi')")
-        result = _execute_text_editor({"command": "view", "path": "hello.py"}, tmp_path)
-        assert "print('hi')" in result
-
-    def test_view_directory(self, tmp_path: Path) -> None:
-        (tmp_path / "a.py").write_text("")
-        (tmp_path / "b.py").write_text("")
-        result = _execute_text_editor({"command": "view", "path": "."}, tmp_path)
-        assert "a.py" in result
-        assert "b.py" in result
-
-    def test_create_file(self, tmp_path: Path) -> None:
-        result = _execute_text_editor(
-            {"command": "create", "path": "new.py", "file_text": "x = 1"},
-            tmp_path,
-        )
-        assert "Created" in result
-        assert (tmp_path / "new.py").read_text() == "x = 1"
-
-    def test_create_nested(self, tmp_path: Path) -> None:
-        _execute_text_editor(
-            {"command": "create", "path": "sub/dir/file.py", "file_text": "y = 2"},
-            tmp_path,
-        )
-        assert (tmp_path / "sub" / "dir" / "file.py").read_text() == "y = 2"
-
-    def test_str_replace(self, tmp_path: Path) -> None:
-        (tmp_path / "code.py").write_text("x = 1\ny = 2\nz = 3")
-        result = _execute_text_editor(
-            {"command": "str_replace", "path": "code.py", "old_str": "y = 2", "new_str": "y = 99"},
-            tmp_path,
-        )
-        assert "Replaced" in result
-        assert "y = 99" in (tmp_path / "code.py").read_text()
-
-    def test_str_replace_not_found(self, tmp_path: Path) -> None:
-        (tmp_path / "code.py").write_text("x = 1")
-        result = _execute_text_editor(
-            {"command": "str_replace", "path": "code.py", "old_str": "nope", "new_str": "yes"},
-            tmp_path,
-        )
-        assert "not found" in result.lower()
-
-    def test_str_replace_multiple_matches(self, tmp_path: Path) -> None:
-        (tmp_path / "code.py").write_text("x = 1\nx = 1\n")
-        result = _execute_text_editor(
-            {"command": "str_replace", "path": "code.py", "old_str": "x = 1", "new_str": "x = 2"},
-            tmp_path,
-        )
-        assert "2 times" in result
-
-    def test_insert(self, tmp_path: Path) -> None:
-        (tmp_path / "code.py").write_text("line1\nline2")
-        result = _execute_text_editor(
-            {"command": "insert", "path": "code.py", "insert_line": 1, "insert_text": "inserted"},
-            tmp_path,
-        )
-        assert "Inserted" in result
-        content = (tmp_path / "code.py").read_text()
-        assert "inserted" in content
-
-    def test_path_traversal_blocked(self, tmp_path: Path) -> None:
-        result = _execute_text_editor({"command": "view", "path": "../../etc/passwd"}, tmp_path)
-        assert "outside" in result.lower()
 
 
 class TestDeriveArtifacts:
@@ -446,7 +373,7 @@ class TestClaudeAdapterRunSession:
             usage=_make_usage(250, 40),
         )
         client = self._mock_client([tool_call_response, final_response])
-        adapter = ClaudeAdapter(client)
+        adapter = ClaudeAdapter(client, executor=_FakeExecutor(workdir))
 
         result = await adapter.run_session(
             workdir=workdir,
@@ -512,6 +439,29 @@ class TestClaudeAdapterRunSession:
             assert result.outcome == SessionOutcome.ERROR
 
     @pytest.mark.asyncio
+    async def test_executor_unreachable_maps_to_error(self, tmp_path: Path) -> None:
+        workdir = self._setup_git_repo(tmp_path)
+        tool_call = _make_message(
+            content=[_make_tool_use_block("bash", {"command": "echo hi"}, "t1")],
+            stop_reason="tool_use",
+        )
+        client = self._mock_client([tool_call])
+        executor = AsyncMock(spec=ExecutorClient)
+        executor.bash.side_effect = ExecutorError("agent-runner executor unreachable")
+        adapter = ClaudeAdapter(client, executor=executor)
+
+        result = await adapter.run_session(
+            workdir=workdir,
+            role=SessionRole.IMPLEMENTOR,
+            model="claude-sonnet-4-6",
+            allowed_tools=["bash"],
+            prompt="Run a command",
+            context_files=[],
+        )
+
+        assert result.outcome == SessionOutcome.ERROR
+
+    @pytest.mark.asyncio
     async def test_git_derived_artifacts(self, tmp_path: Path) -> None:
         workdir = self._setup_git_repo(tmp_path)
 
@@ -530,7 +480,7 @@ class TestClaudeAdapterRunSession:
             stop_reason="end_turn",
         )
         client = self._mock_client([tool_call, final])
-        adapter = ClaudeAdapter(client)
+        adapter = ClaudeAdapter(client, executor=_FakeExecutor(workdir))
 
         result = await adapter.run_session(
             workdir=workdir,
@@ -615,7 +565,13 @@ class TestClaudeAdapterRunSession:
 
 
 class TestClaudeAdapterHooks:
-    """Tests that the adapter integrates PreToolUse/PostToolUse hooks."""
+    """Tests that the adapter maps executor RPC responses into audit records/events.
+
+    Permission enforcement itself now runs inside agent-runner (Spec §7.4) and is
+    covered there (agent-runner/tests/test_hooks.py, test_routes.py). These tests
+    confirm the adapter correctly turns a "Permission denied: ..." response from the
+    executor into a blocked audit record and an error tool-result.
+    """
 
     def _setup_git_repo(self, tmp_path: Path) -> Path:
         subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
@@ -646,6 +602,11 @@ class TestClaudeAdapterHooks:
         client.messages.stream = MagicMock(side_effect=stream_mocks)
         return client
 
+    def _mock_executor(self, bash_output: str) -> AsyncMock:
+        executor = AsyncMock(spec=ExecutorClient)
+        executor.bash.return_value = bash_output
+        return executor
+
     @pytest.mark.asyncio
     async def test_blocked_tool_returns_permission_denied(self, tmp_path: Path) -> None:
         workdir = self._setup_git_repo(tmp_path)
@@ -660,7 +621,10 @@ class TestClaudeAdapterHooks:
             stop_reason="end_turn",
         )
         client = self._mock_client([tool_call, final])
-        adapter = ClaudeAdapter(client)
+        executor = self._mock_executor(
+            "Permission denied: bash command references secret files (.env): cat .env"
+        )
+        adapter = ClaudeAdapter(client, executor=executor)
 
         result = await adapter.run_session(
             workdir=workdir,
@@ -689,7 +653,10 @@ class TestClaudeAdapterHooks:
             stop_reason="end_turn",
         )
         client = self._mock_client([tool_call, final])
-        adapter = ClaudeAdapter(client)
+        executor = self._mock_executor(
+            "Permission denied: bash command references secret files (.env): cat .env"
+        )
+        adapter = ClaudeAdapter(client, executor=executor)
 
         result = await adapter.run_session(
             workdir=workdir,
@@ -718,7 +685,8 @@ class TestClaudeAdapterHooks:
             stop_reason="end_turn",
         )
         client = self._mock_client([tool_call, final])
-        adapter = ClaudeAdapter(client)
+        executor = self._mock_executor("hello\n")
+        adapter = ClaudeAdapter(client, executor=executor)
 
         result = await adapter.run_session(
             workdir=workdir,

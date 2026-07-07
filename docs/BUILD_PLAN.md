@@ -322,12 +322,11 @@ tool-level canonical persona/skill content the wave loop composes at render time
 - [x] #249 — README's documented direct health check cannot work — port 8000 not published
 - [x] #250 — No canonical base-skill/persona-prompt/overlay content exists — `compose_and_render` has nothing to load in production _(discovered while implementing #246; PR #253 seeded the canonical content and loaders; PR #255 wired `app/bootstrap.py` to use it)_
 - [x] #256 — Build an agent-runner executor service for bash + text-editor tool execution
-- [ ] #257 — Give orchestrator-api an internal-only network path to the agent-runner executor _(deps: #256)_
+- [x] #257 — Give orchestrator-api an internal-only network path to the agent-runner executor _(deps: #256)_
 - [ ] #258 — Swap ClaudeAdapter's tool execution from local subprocess to the agent-runner executor RPC _(deps: #256, #257)_
 - [ ] #259 — Concurrency and failure-mode parity for the executor under the wave-loop's parallel scheduler _(deps: #258)_
 - [ ] #260 — Add architectural test locking in the sandboxed execution boundary; sync spec/deployment docs _(deps: #258, #259; closes #248 on merge)_
-- [ ] #262 — agent-runner: use constant-time comparison for bearer token auth _(non-blocking finding from #261 review)_
+- [x] #262 — agent-runner: use constant-time comparison for bearer token auth _(non-blocking finding from #261 review)_
 
-**Workable now:** #256 merged, unblocking #257. #258-#260 continue to unlock in sequence as
-each preceding issue merges. #262 is a low-priority hardening item and can be picked up any
-time.
+**Workable now:** #257 merged, unblocking #258. #259-#260 continue to unlock in sequence as
+each preceding issue merges. #262 is merged.
