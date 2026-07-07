@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import subprocess
 from pathlib import Path
@@ -7,6 +8,7 @@ from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 
 from app.providers.claude import (
@@ -562,6 +564,162 @@ class TestClaudeAdapterRunSession:
             assert isinstance(event, NormalisedEvent)
         for artifact in result.artifacts:
             assert isinstance(artifact, str)
+
+
+class TestClaudeAdapterExecutorFailureIntegration:
+    """Real ``ExecutorClient`` (not a mocked ``ToolExecutor``) wired into ``run_session``.
+
+    ``test_executor_unreachable_maps_to_error`` above proves the catch clause exists by
+    injecting ``ExecutorError`` directly. These exercise the real RPC-failure path end to
+    end — a genuine ``httpx`` transport failure raising through the real
+    ``ExecutorClient._call`` and being caught by ``run_session`` — matching #259's
+    "forced executor failure (bad host/port, or token rejection)" acceptance criterion.
+    """
+
+    def _setup_git_repo(self, tmp_path: Path) -> Path:
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True
+        )
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+        (tmp_path / "existing.py").write_text("old = True")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True)
+        return tmp_path
+
+    def _mock_client(self, responses: list[SimpleNamespace]) -> AsyncMock:
+        client = AsyncMock()
+        stream_mocks = []
+        for resp in responses:
+            stream_ctx = AsyncMock()
+            stream_ctx.__aenter__ = AsyncMock(return_value=stream_ctx)
+            stream_ctx.__aexit__ = AsyncMock(return_value=False)
+            stream_ctx.get_final_message = AsyncMock(return_value=resp)
+            stream_mocks.append(stream_ctx)
+        client.messages.stream = MagicMock(side_effect=stream_mocks)
+        return client
+
+    @pytest.mark.asyncio
+    async def test_connection_refused_maps_to_error(self, tmp_path: Path) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            raise httpx.ConnectError("connection refused")
+
+        executor = ExecutorClient(
+            base_url="http://bad-host:8000",
+            token="secret",
+            transport=httpx.MockTransport(handler),
+        )
+        tool_call = _make_message(
+            content=[_make_tool_use_block("bash", {"command": "echo hi"}, "t1")],
+            stop_reason="tool_use",
+        )
+        adapter = ClaudeAdapter(self._mock_client([tool_call]), executor=executor)
+
+        result = await adapter.run_session(
+            workdir=self._setup_git_repo(tmp_path),
+            role=SessionRole.IMPLEMENTOR,
+            model="claude-sonnet-4-6",
+            allowed_tools=["bash"],
+            prompt="Run a command",
+            context_files=[],
+        )
+
+        assert result.outcome == SessionOutcome.ERROR
+
+    @pytest.mark.asyncio
+    async def test_token_rejection_maps_to_error(self, tmp_path: Path) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(401, json={"detail": "invalid or missing bearer token"})
+
+        executor = ExecutorClient(
+            base_url="http://agent-runner:8000",
+            token="wrong-token",
+            transport=httpx.MockTransport(handler),
+        )
+        tool_call = _make_message(
+            content=[_make_tool_use_block("bash", {"command": "echo hi"}, "t1")],
+            stop_reason="tool_use",
+        )
+        adapter = ClaudeAdapter(self._mock_client([tool_call]), executor=executor)
+
+        result = await adapter.run_session(
+            workdir=self._setup_git_repo(tmp_path),
+            role=SessionRole.IMPLEMENTOR,
+            model="claude-sonnet-4-6",
+            allowed_tools=["bash"],
+            prompt="Run a command",
+            context_files=[],
+        )
+
+        assert result.outcome == SessionOutcome.ERROR
+
+    @pytest.mark.asyncio
+    async def test_two_concurrent_sessions_do_not_cross_contaminate(self, tmp_path: Path) -> None:
+        """Two in-flight sessions (Spec §4.2 concurrency cap) sharing one ExecutorClient.
+
+        Each session's bash call must come back with its own output, not the other
+        session's, even though both are in flight against the executor at once.
+        """
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            payload = json.loads(request.content)
+            command = payload["command"]
+            # Force overlap: whichever request arrives first waits, so the two
+            # in-flight requests are genuinely concurrent, not accidentally serial.
+            if "first" in command:
+                await asyncio.sleep(0.05)
+            return httpx.Response(200, json={"output": f"output-for-{command}"})
+
+        executor = ExecutorClient(
+            base_url="http://agent-runner:8000",
+            token="secret",
+            transport=httpx.MockTransport(handler),
+        )
+
+        workdir_a = self._setup_git_repo(tmp_path / "session-a")
+        workdir_b = self._setup_git_repo(tmp_path / "session-b")
+
+        tool_call_a = _make_message(
+            content=[_make_tool_use_block("bash", {"command": "echo first"}, "t1")],
+            stop_reason="tool_use",
+        )
+        final_a = _make_message(content=[_make_text_block("done a")])
+        tool_call_b = _make_message(
+            content=[_make_tool_use_block("bash", {"command": "echo second"}, "t2")],
+            stop_reason="tool_use",
+        )
+        final_b = _make_message(content=[_make_text_block("done b")])
+
+        adapter_a = ClaudeAdapter(self._mock_client([tool_call_a, final_a]), executor=executor)
+        adapter_b = ClaudeAdapter(self._mock_client([tool_call_b, final_b]), executor=executor)
+
+        result_a, result_b = await asyncio.gather(
+            adapter_a.run_session(
+                workdir=workdir_a,
+                role=SessionRole.IMPLEMENTOR,
+                model="claude-sonnet-4-6",
+                allowed_tools=["bash"],
+                prompt="Session A",
+                context_files=[],
+            ),
+            adapter_b.run_session(
+                workdir=workdir_b,
+                role=SessionRole.IMPLEMENTOR,
+                model="claude-sonnet-4-6",
+                allowed_tools=["bash"],
+                prompt="Session B",
+                context_files=[],
+            ),
+        )
+
+        assert result_a.outcome == SessionOutcome.COMPLETED
+        assert result_b.outcome == SessionOutcome.COMPLETED
+
+        tool_result_a = next(e for e in result_a.events if e.kind == EventKind.TOOL_RESULT)
+        tool_result_b = next(e for e in result_b.events if e.kind == EventKind.TOOL_RESULT)
+        assert tool_result_a.content == "output-for-echo first"
+        assert tool_result_b.content == "output-for-echo second"
 
 
 class TestClaudeAdapterHooks:
