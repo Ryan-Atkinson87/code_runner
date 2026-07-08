@@ -11,18 +11,15 @@ against what actually happens if you run it today:
 
 ## Blocking-issue summary
 
-All of the original composition/bootstrap/sandboxing gaps this file was drafted against are now
-closed (`create_app()` wires real dependencies, `orchestrator-api` has repo/DB volume mounts,
-canonical skill/prompt/overlay content exists, and agent tool execution runs inside the sandboxed
-`agent-runner` executor rather than in-process). One unrelated gap remains, filed under the same
-[**Deployment bootstrap** (#8)](https://github.com/Ryan-Atkinson87/code_runner/milestone/8)
-milestone:
+All of the composition/bootstrap/sandboxing gaps this file was drafted against are now closed:
+`create_app()` wires real dependencies, `orchestrator-api` has repo/DB volume mounts, canonical
+skill/prompt/overlay content exists, and agent tool execution runs inside the sandboxed
+`agent-runner` executor rather than in-process. No open blockers remain under
+[**Deployment bootstrap** (#8)](https://github.com/Ryan-Atkinson87/code_runner/milestone/8).
 
-| Issue | Title | Blocks step(s) |
-|---|---|---|
-| [#269](https://github.com/Ryan-Atkinson87/code_runner/issues/269) | `scripts/verify-egress-lockdown.sh` referenced by #8/#257/this doc was never actually committed | 11 (verification convenience only — not a boot blocker) |
-
-Re-run through this file once #269 closes to confirm step 11 is fully executable as documented.
+Re-run through this file once a server with Docker is available to confirm every step end-to-end
+(this revision is based on source review, not a live run — see the readiness checklist at the
+bottom).
 
 ---
 
@@ -165,17 +162,15 @@ from the environment at call time. The Langfuse UI itself (`http://<server>:3000
 container) will come up and let you create API keys once the stack is running; a real run (step
 9) is what populates it with traces.
 
-## 11. Egress lockdown verification — ⚠️ blocked by [#269](https://github.com/Ryan-Atkinson87/code_runner/issues/269)
+## 11. Egress lockdown verification — ✅
 
 ```bash
 bash scripts/verify-egress-lockdown.sh
 ```
 
-This script is documented (README.md, issue #8's acceptance criteria) but was never actually
-committed to the repo — running the command above fails with "no such file or directory," not a
-lockdown finding. Until #269 lands, verify manually: confirm `agent-runner` can reach an
-allowlisted host (e.g. `github.com`) and cannot reach a non-allowlisted one, and that the other
-services still reach the internet normally.
+Exercises proxy env vars, allowlisted-domain access, non-allowlisted-domain blocking, direct
+egress bypass, the filesystem boundary, and confirms other services keep normal internet access
+— run it with the Compose stack up.
 
 ## 12. Tear down — ✅
 
@@ -194,7 +189,7 @@ docker compose down -v    # also remove volumes
       not in-process; architectural test added)
 - [x] README matches the actual reachable endpoints
 - [x] Canonical skill/prompt/overlay content exists for `compose_and_render` to load
-- [ ] #269 closed — `scripts/verify-egress-lockdown.sh` actually exists and passes
+- [x] `scripts/verify-egress-lockdown.sh` exists and covers the documented checks
 - [ ] Steps 6, 7, 9 re-verified end-to-end with a real `project.yaml` and a trivial milestone on
       an actual server (this file is based on source review; no Docker host was available to run
       the full stack when it was last updated)

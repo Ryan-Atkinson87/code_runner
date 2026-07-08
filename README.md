@@ -64,7 +64,7 @@ commands (`git push`, `npm install`, `pip install`) — the model API call itsel
 Per-project additions come from `project.yaml` `egress.allow` at runtime.
 
 ```bash
-# Verify the lockdown with the stack running (script not yet written — see #269)
+# Verify the lockdown with the stack running
 bash scripts/verify-egress-lockdown.sh
 ```
 
