@@ -1,8 +1,9 @@
 # Deployment Plan — Local Server
 
 Step-by-step plan for standing up Code Runner on a self-hosted server, verified against the
-codebase as of 2026-07-04 (all Spec §14 phases 1–7 closed, `main` at `e906d5a`). Each step below
-is marked against what actually happens if you run it today:
+codebase as of 2026-07-08 (all Spec §14 phases 1–7 closed, plus the **Deployment bootstrap**
+milestone (#8) that closed the gaps this file originally tracked). Each step below is marked
+against what actually happens if you run it today:
 
 - ✅ **Works as-is** — verified by reading the relevant source, not just the docs.
 - ⚠️ **Blocked** — will fail as the project stands; a GitHub issue tracks the fix. Do not expect
@@ -10,18 +11,18 @@ is marked against what actually happens if you run it today:
 
 ## Blocking-issue summary
 
-All filed under milestone [**Deployment bootstrap** (#8)](https://github.com/Ryan-Atkinson87/code_runner/milestone/8)
-— newly discovered gap work, not part of the original Spec §14 phase list.
+All of the original composition/bootstrap/sandboxing gaps this file was drafted against are now
+closed (`create_app()` wires real dependencies, `orchestrator-api` has repo/DB volume mounts,
+canonical skill/prompt/overlay content exists, and agent tool execution runs inside the sandboxed
+`agent-runner` executor rather than in-process). One unrelated gap remains, filed under the same
+[**Deployment bootstrap** (#8)](https://github.com/Ryan-Atkinson87/code_runner/milestone/8)
+milestone:
 
 | Issue | Title | Blocks step(s) |
 |---|---|---|
-| [#246](https://github.com/Ryan-Atkinson87/code_runner/issues/246) | Wire real dependencies into `create_app()` so the API boots functional, not stubbed | 6, 7, 9 |
-| [#247](https://github.com/Ryan-Atkinson87/code_runner/issues/247) | Add docker-compose volume mounts: `orchestrator-api` needs project-repo access + SQLite persistence | 9 |
-| [#248](https://github.com/Ryan-Atkinson87/code_runner/issues/248) | Claude adapter executes tool calls in-process, bypassing the `agent-runner` sandbox decided in the Spec | 9 (security posture, not a hard blocker to boot) |
-| [#249](https://github.com/Ryan-Atkinson87/code_runner/issues/249) | README's documented direct health check cannot work — port 8000 not published | 5b |
-| [#250](https://github.com/Ryan-Atkinson87/code_runner/issues/250) | No canonical base-skill/persona-prompt/overlay content exists — `compose_and_render` has nothing to load in production | 9 (discovered while implementing #246) |
+| [#269](https://github.com/Ryan-Atkinson87/code_runner/issues/269) | `scripts/verify-egress-lockdown.sh` referenced by #8/#257/this doc was never actually committed | 11 (verification convenience only — not a boot blocker) |
 
-Re-run through this file once those issues close to confirm readiness — that's its purpose.
+Re-run through this file once #269 closes to confirm step 11 is fully executable as documented.
 
 ---
 
@@ -29,7 +30,9 @@ Re-run through this file once those issues close to confirm readiness — that's
 
 - Docker Engine + Docker Compose v2+ installed on the server.
 - Network access from the server to `github.com`, `api.github.com`, `registry.npmjs.org`,
-  `pypi.org`, `api.anthropic.com` (the default Squid allowlist, `squid/allowlist.txt`).
+  `pypi.org`, `files.pythonhosted.org` (the default Squid allowlist for `agent-runner`,
+  `squid/allowlist.txt`) and to `api.anthropic.com` for `orchestrator-api` itself, which is the
+  process that actually calls the model API and has no egress restriction (Spec §7.2).
 - This repo cloned onto the server (`git clone` over SSH or HTTPS, your choice of auth).
 
 ## 2. GitHub PAT — ✅ (manual step, no code involved)
@@ -56,12 +59,14 @@ Fill in:
 |---|---|---|
 | `GITHUB_PAT` | hand-off/PR creation | from step 2 |
 | `ANTHROPIC_API_KEY` | Claude provider adapter | |
+| `AGENT_RUNNER_TOKEN` | agent-runner executor auth | shared secret; `orchestrator-api` and `agent-runner` must use the same value |
 | `NOTION_TOKEN` | Notion tracker sync | optional for a first test run |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | notifications | optional for a first test run |
 | `AUTH_PASSWORD_HASH` | login | generated in step 4 |
 | `LANGFUSE_NEXTAUTH_SECRET` / `LANGFUSE_SALT` | Langfuse server | any random string |
 | `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | trace emission | created in the Langfuse UI **after** first boot (step 8) |
-| `CODE_RUNNER_PROJECT_DIR` | — | today only referenced by the unused `agent-runner` mount (see #247, #248) — setting it has no effect on a real run yet |
+| `CODE_RUNNER_PROJECT_DIR` | mounting the target project repo | absolute host path, mounted read-write into both `orchestrator-api` and `agent-runner` at `/workspace` |
+| `CODE_RUNNER_PROJECT_CONFIG_PATH` / `CODE_RUNNER_DB_PATH` / `CODE_RUNNER_EXECUTION_PROFILE_PATH` | `orchestrator-api` composition root | set all three to boot with real dependencies wired; see `.env.example` for the expected paths under `/workspace` and `/data` |
 
 ## 4. Generate the auth password hash — ✅
 
@@ -79,51 +84,48 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Both Dockerfiles build cleanly:
+All three Dockerfiles build cleanly:
 - `orchestrator-api/Dockerfile` — `uv sync` + `uvicorn app.main:create_app --factory`.
 - `orchestrator-ui/Dockerfile` — multi-stage `node:22-alpine` build → `nginx:alpine` serving the
   static bundle. No runtime env vars needed; `VITE_API_BASE_URL` is baked in at build time
   (default `/api` is correct unless you're not routing through Traefik).
+- `agent-runner/Dockerfile` — `uv sync` + `uvicorn app.main:create_app --factory`, the internal
+  bash/text-editor executor service (#256) that `orchestrator-api` calls over `agent_net`
+  (#257, #258).
 
 Traefik's TLS is self-contained — `traefik/traefik.yml` configures a default auto-generated
 self-signed cert for `localhost` (`tls.stores.default.defaultGeneratedCert`), so there's no
 separate certificate to provision. `curl -k` (accepting the self-signed cert) is all that's
 needed.
 
-### 5a. Health check via Traefik — ✅
+### 5a. Health check — ✅
 
 ```bash
 curl -k https://localhost/api/health
 ```
 
-### 5b. Health check "direct" — resolved by [#249](https://github.com/Ryan-Atkinson87/code_runner/issues/249)
+This is the only supported health check — `orchestrator-api` has no published host port (only
+`traefik` publishes host ports, by design, Spec §2), so a "direct" `curl localhost:8000` alternative
+was removed from README.md rather than added (#249).
 
-README.md previously documented `curl http://localhost:8000/health` as a "direct" alternative.
-This never worked: `orchestrator-api` has no `ports:` mapping in `docker-compose.yml`, so port
-8000 isn't reachable from the host at all. Fixed by removing the direct-check line rather than
-publishing the port — `traefik` is the only service with host port mappings in this stack by
-design (Spec §2), and opening a second, TLS-less ingress path for local-dev convenience would be
-a step away from that, not just a doc fix. Traefik (step 5a) is the one supported health check.
-
-## 6. Prepare `project.yaml` for your target project — ⚠️ blocked by [#246](https://github.com/Ryan-Atkinson87/code_runner/issues/246)
+## 6. Prepare `project.yaml` for your target project — ✅
 
 The schema is real and validated (`app/config/schema.py`) — required fields are `project.name`,
 `integrations.github.owner`, at least one `repos[]` entry, and a `secrets` map of logical names
 to env-var names. Reference fixtures: `orchestrator-api/tests/fixtures/minimal_project.yaml`
 (smallest valid example) and `trive_project.yaml` (full example).
 
-You can write this file today, but nothing in the running app reads it yet — `Settings`
-(`app/settings.py`) has no config-path field, and `config_path`/`project_config` are pure
-`create_app()` constructor kwargs that the Dockerfile's entrypoint never supplies. `GET`/`PUT
-/config` will 500 with `RuntimeError("ProjectConfig not initialised")` until #246 closes.
+Place the file inside your `CODE_RUNNER_PROJECT_DIR` mount (i.e. under `/workspace` once
+mounted) and point `CODE_RUNNER_PROJECT_CONFIG_PATH` at it. `create_app()`'s composition root
+(`app/bootstrap.py`) loads it at boot — `GET`/`PUT /config` work end-to-end once that's set.
 
-## 7. Generate `execution-profile.yaml` — ⚠️ blocked by [#246](https://github.com/Ryan-Atkinson87/code_runner/issues/246)
+## 7. Generate `execution-profile.yaml` — ✅
 
 Intended flow is `POST /profile/propose` → review → `POST /profile/confirm` (a "tech-lead
 session" generates this file — it's not meant to be hand-written, though a hand-written one
-would validate against `app/profile/schema.py` if you needed a stopgap). `POST /profile/propose`
-will 500 with `RuntimeError("Profile generation not initialised")` until #246 closes, since
-nothing ever calls `init_profile_deps`.
+would validate against `app/profile/schema.py` if you needed a stopgap). `app/bootstrap.py`
+wires `profile_generate_fn` at boot, so `POST /profile/propose` works end-to-end with
+`CODE_RUNNER_EXECUTION_PROFILE_PATH` set.
 
 ## 8. Log in — ✅
 
@@ -136,48 +138,49 @@ curl -k -c cookies.txt -X POST https://localhost/api/login \
 Single-user auth — password only, no username field. The session cookie in `cookies.txt`
 authenticates subsequent requests and the SSE progress stream.
 
-## 9. Start a real run — ⚠️ blocked by [#246](https://github.com/Ryan-Atkinson87/code_runner/issues/246) and [#247](https://github.com/Ryan-Atkinson87/code_runner/issues/247)
+## 9. Start a real run — ✅
 
-`POST /runs/start` will 500 with `RuntimeError("RunController not initialised")` — nothing
-constructs a real `RunController`, `Store`, or `GitHubClient` at boot (#246). Separately, even
-once that's fixed, `orchestrator-api` has no volume mount to your project's repo — the Claude
-adapter runs its `bash`/text-editor tool calls as `subprocess` calls inside the
-`orchestrator-api` container itself (not inside the sandboxed `agent-runner` container), so
-`orchestrator-api` needs direct filesystem access to the repo (#247).
+`POST /runs/start` boots a real `RunController`, `Store`, and `GitHubClient` from the composition
+root (`app/bootstrap.py`) once `CODE_RUNNER_PROJECT_CONFIG_PATH`/`CODE_RUNNER_DB_PATH` are set
+(step 3). `orchestrator-api` has direct filesystem access to the project repo via the
+`CODE_RUNNER_PROJECT_DIR` mount (step 3), which its deterministic git/PR engine
+(`app/git/repo.py`) reads and writes directly — that mount is unrelated to agent tool-call
+execution.
 
-Before relying on this for anything beyond a local experiment, also read
-[#248](https://github.com/Ryan-Atkinson87/code_runner/issues/248): the Spec decided that model
-calls and tool execution happen from the network-locked `agent-runner` container; the shipped
-adapter runs them unsandboxed from `orchestrator-api` instead. The egress allowlist and
-filesystem lockdown currently protect a container that never executes agent-authored code.
+Agent-authored bash and text-editor tool calls do **not** run inside `orchestrator-api`. The
+Claude adapter (`app/providers/claude.py`) sends them over the private `agent_net` network path
+to the `agent-runner` executor (#256–#259), which enforces `pre_tool_use_check` itself and
+executes them inside its own network-locked, read-only-root container. This is the sandboxing
+boundary Spec §7.1/§7.2 decided on — see `orchestrator-api/tests/test_arch_sandboxed_execution.py`
+for the architectural test that locks it in.
 
-Even once #246 and #247 close, a real wave will fail immediately inside `compose_and_render` —
-see [#250](https://github.com/Ryan-Atkinson87/code_runner/issues/250): no tool-level canonical
-skill set, persona base-prompt, or overlay content has ever been authored, so there is nothing
-for the composition root to load.
+Canonical skill/persona-prompt/overlay content exists under `orchestrator-api/canonical/`
+(#250), so `compose_and_render` has real content to load for a wave against any
+`execution-profile.yaml` declaring the standard persona types.
 
 ## 10. Observability (Langfuse) — ✅, independent of the above
 
 `app/observability/langfuse_emitter.py` reads `LANGFUSE_PUBLIC_KEY`/`SECRET_KEY`/`HOST` directly
-from the environment at call time — this is not wired through `create_app()`'s DI, so it's
-unaffected by #246. The Langfuse UI itself (`http://<server>:3000` or via its own container)
-will come up and let you create API keys once the stack is running. It just won't have any real
-traces to show until #246/#247 are fixed and a real run executes.
+from the environment at call time. The Langfuse UI itself (`http://<server>:3000` or via its own
+container) will come up and let you create API keys once the stack is running; a real run (step
+9) is what populates it with traces.
 
-## 11. Egress lockdown verification — ✅ (script runs successfully; see caveat)
+## 11. Egress lockdown verification — ⚠️ blocked by [#269](https://github.com/Ryan-Atkinson87/code_runner/issues/269)
 
 ```bash
 bash scripts/verify-egress-lockdown.sh
 ```
 
-This checks the `agent-runner`/Squid network configuration and will pass on its own terms. Per
-#248, treat a passing result as "the sandbox is correctly configured," not as "agent code
-execution is sandboxed" — those are currently two different things.
+This script is documented (README.md, issue #8's acceptance criteria) but was never actually
+committed to the repo — running the command above fails with "no such file or directory," not a
+lockdown finding. Until #269 lands, verify manually: confirm `agent-runner` can reach an
+allowlisted host (e.g. `github.com`) and cannot reach a non-allowlisted one, and that the other
+services still reach the internet normally.
 
 ## 12. Tear down — ✅
 
 ```bash
-docker compose down       # keep volumes (Langfuse data)
+docker compose down       # keep volumes (Langfuse data, orchestrator-api SQLite state)
 docker compose down -v    # also remove volumes
 ```
 
@@ -185,9 +188,13 @@ docker compose down -v    # also remove volumes
 
 ## Readiness checklist (re-check when revisiting)
 
-- [ ] #246 closed — API boots with real dependencies wired
-- [ ] #247 closed — `orchestrator-api` can reach a project repo and persists its DB
-- [ ] #248 resolved (design decision made, spec and implementation consistent again)
-- [ ] #249 closed — README matches the actual reachable endpoints
-- [ ] #250 closed — canonical skill/prompt/overlay content exists for `compose_and_render` to load
-- [ ] Steps 6, 7, 9 re-verified end-to-end with a real `project.yaml` and a trivial milestone
+- [x] Composition root wires real dependencies — API boots functional, not stubbed
+- [x] `orchestrator-api` can reach a project repo and persists its DB
+- [x] Sandboxed execution boundary restored and locked in (agent tool calls run in `agent-runner`,
+      not in-process; architectural test added)
+- [x] README matches the actual reachable endpoints
+- [x] Canonical skill/prompt/overlay content exists for `compose_and_render` to load
+- [ ] #269 closed — `scripts/verify-egress-lockdown.sh` actually exists and passes
+- [ ] Steps 6, 7, 9 re-verified end-to-end with a real `project.yaml` and a trivial milestone on
+      an actual server (this file is based on source review; no Docker host was available to run
+      the full stack when it was last updated)

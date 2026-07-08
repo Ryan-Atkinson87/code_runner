@@ -276,13 +276,13 @@ Runs in a container on the local server, filesystem-bound to the single project 
 - `agent-runner` has no default route to the internet, only a route to the Squid egress proxy. `HTTP_PROXY`/`HTTPS_PROXY` point at Squid, and an iptables DROP rule on the external interface blocks direct egress so the proxy cannot be bypassed even if the agent removes the env vars.
 - Squid filters on destination hostname (correct approach, since GitHub/registries sit behind CDNs with changing IPs). Domain-level allow/deny only, no TLS interception, so no CA cert needed.
 - This stops the "agent wanders off and asks permission to fetch something" failure mode: the request is blocked at the network layer, so there is no tangent and no prompt to handle.
+- `orchestrator-api` is the process that calls the model API (Claude via the Anthropic Agent SDK, over its unrestricted `code_runner`-network egress) and drives the session loop. `agent-runner` never talks to a model API — it only executes the bash/text-editor tool calls that session emits, over an internal-only RPC surface (`ExecutorClient` → agent-runner's `/v1/bash`, `/v1/text-editor`) reachable solely from `orchestrator-api` via the private `agent_net` network. This is what keeps agent-authored commands inside the sandboxed, egress-locked container instead of running in `orchestrator-api`'s own process.
 
-**Agent-runner allowlist** (Squid ACL, extendable per-project via config):
+**Agent-runner allowlist** (Squid ACL, extendable per-project via config — governs what an agent's *own* bash commands can reach, e.g. `git push`, `npm install`, `pip install`):
 
 - `github.com`, `api.github.com`, `codeload.github.com` — git + PR operations
 - `registry.npmjs.org` — npm (Trive is pnpm/Node)
 - `pypi.org`, `files.pythonhosted.org` — pip, if any repo is Python
-- `api.anthropic.com` — the agent-runner calls the model API directly (decided). OpenAI/Google equivalents added when those providers are enabled.
 
 ### 7.3 GitHub branch protection
 

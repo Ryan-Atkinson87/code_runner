@@ -58,11 +58,13 @@ in-process. The same `CODE_RUNNER_PROJECT_DIR` host path is also mounted read-wr
 and writes the working tree directly, unrelated to agent tool-call execution.
 
 Default allowlist: `github.com`, `api.github.com`, `codeload.github.com`,
-`registry.npmjs.org`, `pypi.org`, `files.pythonhosted.org`, `api.anthropic.com`.
+`registry.npmjs.org`, `pypi.org`, `files.pythonhosted.org`. This governs an agent's own bash
+commands (`git push`, `npm install`, `pip install`) — the model API call itself is made by
+`orchestrator-api` (unrestricted egress), not `agent-runner`, so no model-API domain belongs here.
 Per-project additions come from `project.yaml` `egress.allow` at runtime.
 
 ```bash
-# Verify the lockdown with the stack running
+# Verify the lockdown with the stack running (script not yet written — see #269)
 bash scripts/verify-egress-lockdown.sh
 ```
 

@@ -328,5 +328,6 @@ tool-level canonical persona/skill content the wave loop composes at render time
 - [ ] #260 — Add architectural test locking in the sandboxed execution boundary; sync spec/deployment docs _(deps: #258, #259; closes #248 on merge)_
 - [x] #262 — agent-runner: use constant-time comparison for bearer token auth _(non-blocking finding from #261 review)_
 - [x] #266 — `ExecutorClient._call`: `response.json()` parsing not covered by `ExecutorError` handling _(non-blocking finding from #265 review)_
+- [ ] #269 — `scripts/verify-egress-lockdown.sh` referenced by #8/#257/DEPLOYMENT_PLAN.md was never actually committed _(discovered while updating DEPLOYMENT_PLAN.md for #260)_
 
-**Workable now:** #259 merged, unblocking #260.
+**Workable now:** #260 in progress. #269 unblocked, independent of #260.
