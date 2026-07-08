@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import asyncio
+import time
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -18,6 +21,12 @@ def client(tmp_path: Path) -> TestClient:
 @pytest.fixture
 def auth_headers() -> dict[str, str]:
     return {"Authorization": "Bearer test-token"}
+
+
+def _async_client(tmp_path: Path) -> httpx.AsyncClient:
+    settings = Settings(token="test-token", workdir=str(tmp_path))
+    transport = httpx.ASGITransport(app=create_app(settings))
+    return httpx.AsyncClient(transport=transport, base_url="http://agent-runner")
 
 
 class TestHealth:
@@ -111,3 +120,76 @@ class TestTextEditorEndpoint:
         )
         assert response.status_code == 200
         assert "outside" in response.json()["output"].lower()
+
+
+class TestConcurrency:
+    """Two in-flight AI sessions can hit the executor at once (Spec §4.2 concurrency cap).
+
+    These exercise real concurrent HTTP requests (ASGITransport + asyncio.gather), not
+    sequential TestClient calls, so a regression that serialises requests or leaks state
+    between them would actually show up here.
+    """
+
+    @pytest.mark.asyncio
+    async def test_concurrent_bash_calls_run_in_parallel_without_interference(
+        self, tmp_path: Path, auth_headers: dict[str, str]
+    ) -> None:
+        async with _async_client(tmp_path) as client:
+            start = time.monotonic()
+            responses = await asyncio.gather(
+                client.post(
+                    "/v1/bash",
+                    json={"command": "sleep 0.3 && echo first"},
+                    headers=auth_headers,
+                ),
+                client.post(
+                    "/v1/bash",
+                    json={"command": "sleep 0.3 && echo second"},
+                    headers=auth_headers,
+                ),
+            )
+        elapsed = time.monotonic() - start
+
+        assert "first" in responses[0].json()["output"]
+        assert "second" in responses[1].json()["output"]
+        # If the two sleeps ran sequentially this would take ~0.6s; a generous ceiling
+        # below that proves they actually overlapped instead of queueing.
+        assert elapsed < 0.55
+
+    @pytest.mark.asyncio
+    async def test_concurrent_text_editor_calls_do_not_cross_contaminate(
+        self, tmp_path: Path, auth_headers: dict[str, str]
+    ) -> None:
+        async with _async_client(tmp_path) as client:
+            responses = await asyncio.gather(
+                client.post(
+                    "/v1/text-editor",
+                    json={"command": "create", "path": "a.py", "file_text": "a_content"},
+                    headers=auth_headers,
+                ),
+                client.post(
+                    "/v1/text-editor",
+                    json={"command": "create", "path": "b.py", "file_text": "b_content"},
+                    headers=auth_headers,
+                ),
+            )
+
+        assert all(r.status_code == 200 for r in responses)
+        assert (tmp_path / "a.py").read_text() == "a_content"
+        assert (tmp_path / "b.py").read_text() == "b_content"
+
+    @pytest.mark.asyncio
+    async def test_concurrent_requests_each_get_their_own_response(
+        self, tmp_path: Path, auth_headers: dict[str, str]
+    ) -> None:
+        async with _async_client(tmp_path) as client:
+            commands = [f"echo request-{i}" for i in range(8)]
+            responses = await asyncio.gather(
+                *(
+                    client.post("/v1/bash", json={"command": cmd}, headers=auth_headers)
+                    for cmd in commands
+                )
+            )
+
+        for i, response in enumerate(responses):
+            assert f"request-{i}" in response.json()["output"]
