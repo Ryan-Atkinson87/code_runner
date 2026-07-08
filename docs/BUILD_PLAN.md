@@ -324,10 +324,9 @@ tool-level canonical persona/skill content the wave loop composes at render time
 - [x] #256 — Build an agent-runner executor service for bash + text-editor tool execution
 - [x] #257 — Give orchestrator-api an internal-only network path to the agent-runner executor _(deps: #256)_
 - [x] #258 — Swap ClaudeAdapter's tool execution from local subprocess to the agent-runner executor RPC _(deps: #256, #257)_
-- [ ] #259 — Concurrency and failure-mode parity for the executor under the wave-loop's parallel scheduler _(deps: #258)_
+- [x] #259 — Concurrency and failure-mode parity for the executor under the wave-loop's parallel scheduler _(deps: #258)_
 - [ ] #260 — Add architectural test locking in the sandboxed execution boundary; sync spec/deployment docs _(deps: #258, #259; closes #248 on merge)_
 - [x] #262 — agent-runner: use constant-time comparison for bearer token auth _(non-blocking finding from #261 review)_
-- [ ] #266 — `ExecutorClient._call`: `response.json()` parsing not covered by `ExecutorError` handling _(non-blocking finding from #265 review)_
+- [x] #266 — `ExecutorClient._call`: `response.json()` parsing not covered by `ExecutorError` handling _(non-blocking finding from #265 review)_
 
-**Workable now:** #258 merged, unblocking #259. #260 unlocks once #259 merges. #266 is a
-low-priority hardening item and can be picked up any time.
+**Workable now:** #259 merged, unblocking #260.
