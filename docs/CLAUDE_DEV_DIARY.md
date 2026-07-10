@@ -153,3 +153,25 @@ The Specification deferred multi-provider support to "when a second provider is 
 All seven planned infrastructure phases are now complete. The system can orchestrate a project milestone using Claude, Codex, or Gemini as the implementing provider, switching mid-wave if needed, with provider-correct instruction rendering, usage monitoring, and sandbox enforcement in each case. The test suite stands at 1169 backend tests and 143 frontend tests, all passing with zero lint warnings and zero type errors on both sides.
 
 The next step is the first real autonomous run: pointing the tool at a live GitHub repository, defining a wave of issues, and observing the engine plan, implement, and hand off PRs without human intervention. Every infrastructure component needed for that run is in place.
+
+---
+
+## Milestone 8: Deployment bootstrap — 2026-07-10
+
+### What was done
+
+While drafting `docs/DEPLOYMENT_PLAN.md` for the first real end-to-end run, a gap surfaced: every subsystem from Phases 1–7 was built and unit-tested in isolation, but nothing had ever wired them together at process start, and one subsystem didn't actually behave the way the Specification described. Twelve issues closed the gap.
+
+The most consequential finding was that the Claude adapter executed agent tool calls (bash and text-editor) as a local subprocess on the orchestrator itself, rather than inside the sandboxed `agent-runner` container the security model was designed around (Spec §7 — "the security boundary is infrastructure, not agent goodwill"). The fix was a new `agent-runner` executor service exposing bash and text-editor execution over an internal-only RPC surface, reachable from `orchestrator-api` over a private Docker network with no other route out. The Claude adapter was then swapped from its local subprocess call to that RPC client. Two follow-on issues hardened the boundary: concurrency and forced-failure integration tests proving the executor behaves correctly under the wave loop's parallel scheduler, and an architectural test that greps the codebase for any tool-execution path bypassing the RPC client — so the fix can't silently regress. Two smaller review findings landed alongside it: constant-time comparison for the executor's bearer-token auth (closing a timing side-channel), and `ExecutorClient`'s JSON-parsing failures brought under the same `ExecutorError` handling as its other failure modes.
+
+The remaining issues wired the rest of the boot path together. `create_app()` was rebuilt to assemble real dependencies — `RunController`, `GitHubClient`, `UsageMonitor`, and the rest — instead of booting with stubs that made every route 500. Docker Compose gained the volume mounts `orchestrator-api` needs: read-write access to the target project's working tree and a persistent volume for its SQLite state store, both previously undeclared. The canonical base-skill, persona-prompt, and overlay content that the persona renderer composes at runtime didn't exist anywhere in the repository — `compose_and_render` had nothing to load — so that content was authored from scratch and wired into `app/bootstrap.py`. A stale README line documenting a direct `curl localhost:8000/health` check was removed, since port 8000 was never published outside the Compose network.
+
+### Why it was done
+
+This wasn't one of the Specification's seven planned build phases — it was discovered by trying to actually run the tool end-to-end for the first time. Six phases of unit- and integration-tested subsystems had never been assembled into a single running process pointed at a real project, and that assembly step surfaced assumptions (a published health-check port, an in-process tool-execution path) that had never been true outside their own test suites. Fixing the tool-execution gap in particular mattered more than a typical infrastructure task: Spec Principle 4 treats the container/network boundary as the actual security guarantee, not the provider's permission flags, and until this milestone that guarantee didn't hold — an escaped or misbehaving Claude session could reach the orchestrator process directly instead of being contained by `agent-runner`'s network lockdown.
+
+### Effect on the project
+
+The local Docker Compose stack now boots with real dependencies wired, has the filesystem access and persistent state it needs to operate on an actual project, and enforces the tool-execution sandbox the Specification always specified — with an architectural test locking that boundary in place so it can't quietly regress. 1163 `orchestrator-api` tests and 45 new `agent-runner` tests pass, with clean lint and type checks across both services.
+
+With this milestone closed, all eight phases built so far — the seven originally planned plus this gap-closer — are complete, and the tool is genuinely ready for its first live autonomous orchestration run rather than only appearing ready from its test suites. No new phase has been planned yet; the next step is either planning that first live run directly or scoping a phase around it if one is warranted.

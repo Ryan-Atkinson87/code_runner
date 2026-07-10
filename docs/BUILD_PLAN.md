@@ -36,7 +36,7 @@ progress and has two parts:
 | 5 | Trackers + notifications | ✅ | 3 |
 | 6 | Observability + UI | ✅ | 3, 4, 5 |
 | 7 | Multi-provider | ✅ | 3 |
-| 8 | Deployment bootstrap | 🔄 | 1, 2, 3, 4, 5, 6, 7 |
+| 8 | Deployment bootstrap | ✅ | 1, 2, 3, 4, 5, 6, 7 |
 
 ---
 
@@ -312,7 +312,7 @@ built and unit-tested in isolation, but nothing ever wired them together at proc
 tool-level canonical persona/skill content the wave loop composes at render time. See
 `docs/DEPLOYMENT_PLAN.md`'s blocking-issue table for how these map onto its step-by-step plan.
 
-**Status:** 🔄 (in progress — opened 2026-07-04)
+**Status:** ✅ (complete — milestone closed 2026-07-10)
 
 ### Issues
 
@@ -329,4 +329,4 @@ tool-level canonical persona/skill content the wave loop composes at render time
 - [x] #262 — agent-runner: use constant-time comparison for bearer token auth _(non-blocking finding from #261 review)_
 - [x] #266 — `ExecutorClient._call`: `response.json()` parsing not covered by `ExecutorError` handling _(non-blocking finding from #265 review)_
 
-**Workable now:** all issues closed — milestone ready for `process-close-milestone`.
+All issues closed 2026-07-10; no further phases depend on work beyond what's listed here.
