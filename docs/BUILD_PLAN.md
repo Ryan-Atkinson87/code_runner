@@ -329,4 +329,4 @@ tool-level canonical persona/skill content the wave loop composes at render time
 - [x] #262 — agent-runner: use constant-time comparison for bearer token auth _(non-blocking finding from #261 review)_
 - [x] #266 — `ExecutorClient._call`: `response.json()` parsing not covered by `ExecutorError` handling _(non-blocking finding from #265 review)_
 
-**Workable now:** #259 merged, unblocking #260.
+**Workable now:** #260 in progress (PR #270 open).
